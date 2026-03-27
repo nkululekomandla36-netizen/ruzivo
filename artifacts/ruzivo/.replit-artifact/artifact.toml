@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "RUZIVO"
+version = "1.0.0"
+id = "artifacts/ruzivo"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 24092
+
+[services.development]
+run = "pnpm --filter @workspace/ruzivo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ruzivo", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/ruzivo", "run", "serve" ]
+
+[services.env]
+PORT = "24092"
+BASE_PATH = "/"

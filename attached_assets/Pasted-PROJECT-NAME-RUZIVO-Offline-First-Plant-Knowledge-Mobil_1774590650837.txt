@@ -1,0 +1,199 @@
+PROJECT NAME:
+RUZIVO – Offline-First Plant Knowledge Mobile App
+
+PROJECT OVERVIEW:
+RUZIVO is a mobile application built with React Native (Expo) that allows users to identify plants and access accurate plant knowledge, including safety (toxic vs safe), medicinal uses, and African traditional knowledge. The app must be designed with an offline-first architecture to ensure usability in low-connectivity environments.
+
+PRIMARY GOAL:
+Build a scalable, production-ready mobile app that works both online and offline, prioritizing accessibility, performance, and simplicity.
+
+TARGET PLATFORM:
+
+- Android (primary)
+- iOS (secondary, future-ready)
+
+TECH STACK:
+
+- React Native (Expo)
+- SQLite (expo-sqlite) for local database
+- Firebase Firestore (cloud sync)
+- Plant identification API (online mode only)
+- Optional future: TensorFlow Lite (offline AI scanning)
+
+APP STRUCTURE:
+
+1. HOME SCREEN:
+
+- App title: "RUZIVO"
+- Two main buttons:
+  - "Scan Plant"
+  - "Plant Library"
+- Clean dark UI (dark green, black, gold accents)
+
+2. SCAN SCREEN:
+
+- Camera integration using Expo Camera
+- Capture plant image
+- Button: "Identify Plant"
+
+3. RESULT SCREEN:
+   Display:
+
+- Captured image
+- Plant name (common + scientific)
+- Confidence score
+- Safety status (Safe / Toxic / Caution)
+- Uses (medicinal, nutritional)
+- Warnings
+- Traditional African uses
+- Disclaimer:
+  "This information is for educational purposes only"
+
+4. PLANT LIBRARY SCREEN:
+
+- Search bar
+- Scrollable list of plants
+- Filter options:
+  - Medicinal
+  - Toxic
+  - Food plants
+
+5. PLANT DETAIL SCREEN:
+
+- Full plant information
+- Local names (Shona, Zulu, etc.)
+- Traditional knowledge section
+
+OFFLINE-FIRST REQUIREMENTS:
+
+The app must function without internet connection.
+
+OFFLINE FEATURES:
+
+- Local SQLite database stores plant data
+- Users can:
+  - Browse plant library
+  - Search plants
+  - View plant details
+- Cache previously scanned plants locally
+
+ONLINE FEATURES:
+
+- Upload captured image to plant identification API
+- Receive plant identification results
+- Save results to local database for offline reuse
+
+DATABASE DESIGN (SQLite):
+
+TABLE: plants
+
+- id (TEXT PRIMARY KEY)
+- name_common (TEXT)
+- name_scientific (TEXT)
+- image_url (TEXT)
+- safety_status (TEXT)
+- uses (TEXT as JSON string)
+- warnings (TEXT as JSON string)
+- traditional_uses (TEXT as JSON string)
+- local_names (TEXT as JSON string)
+
+TABLE: scans
+
+- id (TEXT PRIMARY KEY)
+- image_uri (TEXT)
+- identified_name (TEXT)
+- confidence_score (REAL)
+- timestamp (TEXT)
+
+INITIAL DATA (SEED DATABASE):
+
+Include at least the following plants:
+
+1. Aloe Vera
+
+- safety: Safe
+- uses: Skin healing, digestion
+- warnings: Excess intake may irritate stomach
+- traditional: Used for burns and cleansing
+
+2. Moringa
+
+- safety: Safe
+- uses: Immune booster, nutrition
+- warnings: Avoid excessive use
+- traditional: Known as a healing tree
+
+3. Neem
+
+- safety: Caution
+- uses: Antibacterial, skin treatment
+- warnings: Toxic in large amounts
+- traditional: Used for cleansing and protection
+
+4. Rooibos
+
+- safety: Safe
+- uses: Tea, antioxidants
+- warnings: Generally safe
+- traditional: South African herbal tea
+
+5. African Potato (Hypoxis)
+
+- safety: Caution
+- uses: Immune support
+- warnings: Must be used correctly
+- traditional: Important African medicinal root
+
+UI/UX DESIGN REQUIREMENTS:
+
+- Dark theme
+- Colors:
+  - Dark green (#0B3D2E)
+  - Gold (#C9A227)
+  - Black (#000000)
+- Minimal, clean layout
+- Large buttons (accessible design)
+- Smooth navigation between screens
+
+NAVIGATION:
+Use React Navigation (Stack Navigator)
+
+PERFORMANCE REQUIREMENTS:
+
+- Optimize for low-end Android devices
+- Minimize API calls
+- Cache data locally
+- Fast load times
+
+ERROR HANDLING:
+
+- Handle no internet scenario gracefully
+- Show message:
+  "No internet connection. Using offline data."
+- Handle failed API responses
+
+SECURITY & ETHICS:
+
+- Do not claim medical authority
+- Always display disclaimer
+- Ensure safe plant usage information
+
+FUTURE FEATURES (DO NOT BUILD NOW, BUT PREPARE CODE STRUCTURE):
+
+- Offline AI plant scanning (TensorFlow Lite)
+- Voice support (local languages)
+- User contributions
+- Premium content
+- E-commerce integration
+
+DELIVERABLE:
+Generate a fully functional React Native (Expo) starter app with:
+
+- Navigation setup
+- Home screen UI
+- Placeholder scan screen
+- Plant library screen connected to local SQLite database
+- Seed plant data
+- Clean and scalable code structure
+
+END OF SPECIFICATION.
