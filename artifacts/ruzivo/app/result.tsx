@@ -12,7 +12,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import { SafetyBadge } from "@/components/SafetyBadge";
 
@@ -65,22 +64,19 @@ export default function ResultScreen() {
   };
 
   if (!plantData || !plantData.identified) {
-    return <UnidentifiedResult
-      imageUri={decodedUri}
-      topPad={topPad}
-      botPad={botPad}
-      onRetry={handleRetry}
-      onLibrary={handleLibrary}
-    />;
+    return (
+      <UnidentifiedResult
+        imageUri={decodedUri}
+        topPad={topPad}
+        botPad={botPad}
+        onRetry={handleRetry}
+        onLibrary={handleLibrary}
+      />
+    );
   }
 
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
-      <LinearGradient
-        colors={["#051A13", "#000000"]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
@@ -102,10 +98,6 @@ export default function ResultScreen() {
               source={{ uri: decodedUri }}
               style={styles.plantImage}
               resizeMode="cover"
-            />
-            <LinearGradient
-              colors={["transparent", Colors.primary.black + "CC"]}
-              style={styles.imageOverlay}
             />
             <View style={styles.imageBadge}>
               <Feather name="zap" size={12} color={Colors.primary.gold} />
@@ -180,20 +172,8 @@ export default function ResultScreen() {
           Object.keys(plantData.local_names).length > 0 && (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <View
-                  style={[
-                    styles.cardIconBg,
-                    {
-                      backgroundColor:
-                        Colors.primary.lightGreen + "33",
-                    },
-                  ]}
-                >
-                  <Feather
-                    name="map-pin"
-                    size={16}
-                    color={Colors.primary.lightGreen}
-                  />
+                <View style={[styles.cardIconBg, { backgroundColor: Colors.primary.lightGreen + "33" }]}>
+                  <Feather name="map-pin" size={16} color={Colors.primary.lightGreen} />
                 </View>
                 <Text style={styles.cardTitle}>Local Names</Text>
               </View>
@@ -209,10 +189,7 @@ export default function ResultScreen() {
         <View style={styles.actionsRow}>
           <Pressable
             onPress={handleRetry}
-            style={({ pressed }) => [
-              styles.retryBtn,
-              pressed && styles.btnPressed,
-            ]}
+            style={({ pressed }) => [styles.retryBtn, pressed && styles.btnPressed]}
           >
             <Feather name="camera" size={18} color={Colors.primary.gold} />
             <Text style={styles.retryBtnText}>Scan Again</Text>
@@ -220,24 +197,12 @@ export default function ResultScreen() {
 
           <Pressable
             onPress={handleLibrary}
-            style={({ pressed }) => [
-              styles.libraryBtn,
-              pressed && styles.btnPressed,
-            ]}
+            style={({ pressed }) => [styles.libraryBtn, pressed && styles.btnPressed]}
           >
-            <LinearGradient
-              colors={[Colors.primary.gold, "#A8841E"]}
-              style={styles.libraryBtnGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Feather
-                name="book-open"
-                size={18}
-                color={Colors.primary.black}
-              />
+            <View style={styles.libraryBtnInner}>
+              <Feather name="book-open" size={18} color={Colors.primary.black} />
               <Text style={styles.libraryBtnText}>Plant Library</Text>
-            </LinearGradient>
+            </View>
           </Pressable>
         </View>
 
@@ -264,9 +229,7 @@ function ResultSection({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <View
-          style={[styles.cardIconBg, { backgroundColor: color + "22" }]}
-        >
+        <View style={[styles.cardIconBg, { backgroundColor: color + "22" }]}>
           <Feather name={icon} size={16} color={color} />
         </View>
         <Text style={styles.cardTitle}>{title}</Text>
@@ -296,10 +259,6 @@ function UnidentifiedResult({
 }) {
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
-      <LinearGradient
-        colors={["#051A13", "#000000"]}
-        style={StyleSheet.absoluteFill}
-      />
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
@@ -310,81 +269,42 @@ function UnidentifiedResult({
         <Text style={styles.headerTitle}>Result</Text>
         <View style={{ width: 40 }} />
       </View>
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: botPad + 24 },
-        ]}
-      >
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: botPad + 24 }]}>
         {imageUri ? (
           <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: imageUri }}
-              style={styles.plantImage}
-              resizeMode="cover"
-            />
+            <Image source={{ uri: imageUri }} style={styles.plantImage} resizeMode="cover" />
           </View>
         ) : null}
         <View style={[styles.card, { alignItems: "center", gap: 12 }]}>
-          <View
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 20,
-              backgroundColor: Colors.primary.textMuted + "20",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <View style={styles.unidentifiedIcon}>
             <Feather name="help-circle" size={32} color={Colors.primary.textMuted} />
           </View>
-          <Text
-            style={[
-              styles.commonName,
-              { textAlign: "center", fontSize: 20 },
-            ]}
-          >
+          <Text style={[styles.commonName, { textAlign: "center", fontSize: 20 }]}>
             Plant Not Identified
           </Text>
-          <Text
-            style={[
-              styles.description,
-              { textAlign: "center" },
-            ]}
-          >
+          <Text style={[styles.description, { textAlign: "center" }]}>
             The AI could not identify a plant in this image. Try a clearer photo with better lighting and focus on the plant.
           </Text>
         </View>
         <View style={styles.actionsRow}>
           <Pressable
             onPress={onRetry}
-            style={({ pressed }) => [
-              styles.retryBtn,
-              pressed && styles.btnPressed,
-            ]}
+            style={({ pressed }) => [styles.retryBtn, pressed && styles.btnPressed]}
           >
             <Feather name="camera" size={18} color={Colors.primary.gold} />
             <Text style={styles.retryBtnText}>Try Again</Text>
           </Pressable>
           <Pressable
             onPress={onLibrary}
-            style={({ pressed }) => [
-              styles.libraryBtn,
-              pressed && styles.btnPressed,
-            ]}
+            style={({ pressed }) => [styles.libraryBtn, pressed && styles.btnPressed]}
           >
-            <LinearGradient
-              colors={[Colors.primary.gold, "#A8841E"]}
-              style={styles.libraryBtnGradient}
-            >
+            <View style={styles.libraryBtnInner}>
               <Feather name="book-open" size={18} color={Colors.primary.black} />
               <Text style={styles.libraryBtnText}>Browse Library</Text>
-            </LinearGradient>
+            </View>
           </Pressable>
         </View>
-        <Text style={styles.disclaimer}>
-          This information is for educational purposes only.
-        </Text>
+        <Text style={styles.disclaimer}>This information is for educational purposes only.</Text>
       </ScrollView>
     </View>
   );
@@ -393,7 +313,7 @@ function UnidentifiedResult({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.black,
+    backgroundColor: Colors.primary.darkGreen,
   },
   header: {
     flexDirection: "row",
@@ -423,19 +343,11 @@ const styles = StyleSheet.create({
   imageContainer: {
     borderRadius: 20,
     overflow: "hidden",
-    position: "relative",
     height: 220,
   },
   plantImage: {
     width: "100%",
     height: "100%",
-  },
-  imageOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 80,
   },
   imageBadge: {
     position: "absolute",
@@ -608,8 +520,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 14,
     overflow: "hidden",
+    backgroundColor: Colors.primary.gold,
   },
-  libraryBtnGradient: {
+  libraryBtnInner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -620,6 +533,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_700Bold",
     color: Colors.primary.black,
+  },
+  unidentifiedIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: Colors.primary.textMuted + "20",
+    alignItems: "center",
+    justifyContent: "center",
   },
   btnPressed: {
     opacity: 0.7,

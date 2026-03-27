@@ -12,7 +12,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import { Plant, getPlantById } from "@/lib/database";
 import { SafetyBadge } from "@/components/SafetyBadge";
@@ -51,7 +50,7 @@ export default function PlantDetailScreen() {
       .finally(() => setIsLoading(false));
   }, [id]);
 
-  const accentColor = id ? PLANT_COLORS[id] || Colors.primary.darkGreen : Colors.primary.darkGreen;
+  const accentColor = id ? PLANT_COLORS[id] || Colors.primary.gold : Colors.primary.gold;
   const iconName = id ? PLANT_ICONS[id] || "feather" : "feather";
 
   if (isLoading) {
@@ -76,11 +75,6 @@ export default function PlantDetailScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
-      <LinearGradient
-        colors={["#051A13", "#000000"]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <View style={styles.header}>
         <Pressable
           onPress={() => {
@@ -99,11 +93,8 @@ export default function PlantDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 24 }]}
       >
-        <View style={styles.heroCard}>
-          <LinearGradient
-            colors={[accentColor + "33", accentColor + "11"]}
-            style={styles.heroCardGradient}
-          >
+        <View style={[styles.heroCard, { backgroundColor: accentColor + "22" }]}>
+          <View style={styles.heroCardInner}>
             <View style={[styles.plantIcon, { backgroundColor: accentColor + "30" }]}>
               <Feather name={iconName} size={48} color={accentColor} />
             </View>
@@ -112,7 +103,7 @@ export default function PlantDetailScreen() {
               <Text style={styles.commonName}>{plant.name_common}</Text>
               <Text style={styles.scientificName}>{plant.name_scientific}</Text>
             </View>
-          </LinearGradient>
+          </View>
         </View>
 
         <SectionCard
@@ -208,7 +199,7 @@ function SectionCard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.black,
+    backgroundColor: Colors.primary.darkGreen,
   },
   centered: {
     alignItems: "center",
@@ -247,7 +238,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary.separator,
     marginBottom: 4,
   },
-  heroCardGradient: {
+  heroCardInner: {
     padding: 24,
     alignItems: "center",
     gap: 16,

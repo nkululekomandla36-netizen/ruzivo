@@ -5,14 +5,12 @@ import {
   StyleSheet,
   Pressable,
   Platform,
-  Image,
   StatusBar,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import { useDatabase } from "@/context/DatabaseContext";
 import { getAllPlants } from "@/lib/database";
@@ -46,11 +44,6 @@ export default function HomeScreen() {
     <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
       <StatusBar barStyle="light-content" />
 
-      <LinearGradient
-        colors={["#0B3D2E", "#051A13"]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <View style={styles.header}>
         <View style={styles.logoRow}>
           <Feather name="feather" size={28} color={Colors.primary.gold} />
@@ -61,12 +54,9 @@ export default function HomeScreen() {
 
       <View style={styles.heroSection}>
         <View style={styles.heroIcon}>
-          <LinearGradient
-            colors={["#1A5C44", "#0B3D2E"]}
-            style={styles.heroIconGradient}
-          >
+          <View style={styles.heroIconBg}>
             <Feather name="activity" size={48} color={Colors.primary.gold} />
-          </LinearGradient>
+          </View>
         </View>
         <Text style={styles.heroTitle}>Discover the{"\n"}Power of Plants</Text>
         <Text style={styles.heroSubtitle}>
@@ -82,18 +72,13 @@ export default function HomeScreen() {
             pressed && styles.buttonPressed,
           ]}
         >
-          <LinearGradient
-            colors={[Colors.primary.gold, "#A8841E"]}
-            style={styles.primaryButtonGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
+          <View style={styles.primaryButtonInner}>
             <View style={styles.buttonIcon}>
               <Feather name="camera" size={22} color={Colors.primary.black} />
             </View>
             <Text style={styles.primaryButtonText}>Scan Plant</Text>
             <Feather name="arrow-right" size={18} color={Colors.primary.black} />
-          </LinearGradient>
+          </View>
         </Pressable>
 
         <Pressable
@@ -144,7 +129,7 @@ function StatItem({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.black,
+    backgroundColor: Colors.primary.darkGreen,
     paddingHorizontal: 24,
   },
   header: {
@@ -178,10 +163,11 @@ const styles = StyleSheet.create({
   heroIcon: {
     marginBottom: 8,
   },
-  heroIconGradient: {
+  heroIconBg: {
     width: 100,
     height: 100,
     borderRadius: 28,
+    backgroundColor: Colors.primary.black + "40",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
@@ -209,8 +195,9 @@ const styles = StyleSheet.create({
   primaryButton: {
     borderRadius: 16,
     overflow: "hidden",
+    backgroundColor: Colors.primary.gold,
   },
-  primaryButtonGradient: {
+  primaryButtonInner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

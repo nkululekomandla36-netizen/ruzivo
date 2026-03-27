@@ -14,7 +14,6 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import { saveScan } from "@/lib/database";
 
@@ -111,7 +110,7 @@ export default function ScanScreen() {
       Alert.alert(
         isOffline ? "No Internet Connection" : "Identification Failed",
         isOffline
-          ? "No internet connection. Using offline data. Browse the Plant Library to find plants."
+          ? "No internet connection. Browse the Plant Library to find plants."
           : "Could not identify the plant. Please try again with a clearer photo.",
         [{ text: "OK" }]
       );
@@ -124,10 +123,7 @@ export default function ScanScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
-        "Permission Required",
-        "Please allow access to your photo library."
-      );
+      Alert.alert("Permission Required", "Please allow access to your photo library.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -145,10 +141,7 @@ export default function ScanScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
-        "Permission Required",
-        "Please allow camera access to scan plants."
-      );
+      Alert.alert("Permission Required", "Please allow camera access to scan plants.");
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -162,14 +155,7 @@ export default function ScanScreen() {
   };
 
   return (
-    <View
-      style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}
-    >
-      <LinearGradient
-        colors={["#051A13", "#000000"]}
-        style={StyleSheet.absoluteFill}
-      />
-
+    <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
@@ -191,24 +177,13 @@ export default function ScanScreen() {
 
             {isAnalyzing ? (
               <View style={styles.analyzingOverlay}>
-                <ActivityIndicator
-                  color={Colors.primary.gold}
-                  size="large"
-                />
-                <Text style={styles.analyzingOverlayText}>
-                  {STEP_LABELS[step]}
-                </Text>
+                <ActivityIndicator color={Colors.primary.gold} size="large" />
+                <Text style={styles.analyzingOverlayText}>{STEP_LABELS[step]}</Text>
               </View>
             ) : (
               <View style={styles.viewfinderCenter}>
-                <Feather
-                  name="camera"
-                  size={48}
-                  color={Colors.primary.gold + "60"}
-                />
-                <Text style={styles.viewfinderHint}>
-                  Point at a plant to identify it
-                </Text>
+                <Feather name="camera" size={48} color={Colors.primary.gold + "60"} />
+                <Text style={styles.viewfinderHint}>Point at a plant to identify it</Text>
               </View>
             )}
           </View>
@@ -244,20 +219,13 @@ export default function ScanScreen() {
               isAnalyzing && styles.btnDisabled,
             ]}
           >
-            <LinearGradient
-              colors={[Colors.primary.gold, "#A8841E"]}
-              style={styles.captureBtnGradient}
-            >
+            <View style={styles.captureBtnInner}>
               {isAnalyzing ? (
                 <ActivityIndicator color={Colors.primary.black} size="small" />
               ) : (
-                <Feather
-                  name="camera"
-                  size={28}
-                  color={Colors.primary.black}
-                />
+                <Feather name="camera" size={28} color={Colors.primary.black} />
               )}
-            </LinearGradient>
+            </View>
           </Pressable>
 
           <Pressable
@@ -320,7 +288,7 @@ const CORNER_THICKNESS = 3;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.black,
+    backgroundColor: Colors.primary.darkGreen,
   },
   header: {
     flexDirection: "row",
@@ -358,7 +326,7 @@ const styles = StyleSheet.create({
   viewfinder: {
     flex: 1,
     borderRadius: 20,
-    backgroundColor: Colors.primary.darkGreen + "20",
+    backgroundColor: Colors.primary.black + "40",
     borderWidth: 1,
     borderColor: Colors.primary.separator,
     alignItems: "center",
@@ -437,13 +405,9 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     overflow: "hidden",
-    shadowColor: Colors.primary.gold,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    backgroundColor: Colors.primary.gold,
   },
-  captureBtnGradient: {
+  captureBtnInner: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",

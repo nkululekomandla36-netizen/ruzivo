@@ -13,7 +13,6 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import {
   Plant,
@@ -87,11 +86,6 @@ export default function LibraryScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
-      <LinearGradient
-        colors={["#051A13", "#000000"]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
@@ -167,9 +161,7 @@ export default function LibraryScreen() {
             <Feather name="search" size={32} color={Colors.primary.textMuted} />
           </View>
           <Text style={styles.emptyTitle}>No plants found</Text>
-          <Text style={styles.emptySubtitle}>
-            Try a different search or filter
-          </Text>
+          <Text style={styles.emptySubtitle}>Try a different search or filter</Text>
         </View>
       ) : (
         <FlatList
@@ -178,10 +170,7 @@ export default function LibraryScreen() {
           renderItem={({ item }) => (
             <PlantCard plant={item} onPress={() => handlePlantPress(item)} />
           )}
-          contentContainerStyle={[
-            styles.list,
-            { paddingBottom: botPad + 16 },
-          ]}
+          contentContainerStyle={[styles.list, { paddingBottom: botPad + 16 }]}
           showsVerticalScrollIndicator={false}
           scrollEnabled={!!plants.length}
         />
@@ -193,7 +182,7 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.black,
+    backgroundColor: Colors.primary.darkGreen,
   },
   header: {
     flexDirection: "row",
