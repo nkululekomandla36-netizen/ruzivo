@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "expo-camera": "^17.0.10",
+    "expo-file-system": "^17.0.1",
     "expo-sqlite": "^16.0.10"
   }
 }

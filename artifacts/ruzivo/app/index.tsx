@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,10 +15,17 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import { useDatabase } from "@/context/DatabaseContext";
+import { getAllPlants } from "@/lib/database";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { isReady } = useDatabase();
+  const [plantCount, setPlantCount] = useState(0);
+
+  useEffect(() => {
+    if (!isReady) return;
+    getAllPlants().then((plants) => setPlantCount(plants.length)).catch(() => {});
+  }, [isReady]);
 
   const topPad =
     Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
@@ -105,7 +112,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.statsRow}>
-        <StatItem icon="database" label="5 Plants" />
+        <StatItem icon="database" label={plantCount > 0 ? `${plantCount} Plants` : "20 Plants"} />
         <View style={styles.statDivider} />
         <StatItem icon="wifi-off" label="Offline Ready" />
         <View style={styles.statDivider} />

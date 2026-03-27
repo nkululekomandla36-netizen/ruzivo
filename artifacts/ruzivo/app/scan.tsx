@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,40 +6,136 @@ import {
   Pressable,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import { saveScan } from "@/lib/database";
 
+const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+type ScanStep = "idle" | "reading" | "identifying" | "saving";
+
+const STEP_LABELS: Record<ScanStep, string> = {
+  idle: "",
+  reading: "Reading image...",
+  identifying: "Identifying plant with AI...",
+  saving: "Saving results...",
+};
+
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [step, setStep] = useState<ScanStep>("idle");
 
   const topPad =
     Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const botPad =
     Platform.OS === "web" ? Math.max(insets.bottom, 34) : insets.bottom;
 
+  const isAnalyzing = step !== "idle";
+
+  const analyzeImage = async (uri: string) => {
+    try {
+      setStep("reading");
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+      let base64: string | null = null;
+
+      if (Platform.OS !== "web") {
+        base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      } else {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      setStep("identifying");
+
+      const apiResponse = await fetch(`${API_BASE}/api/plant-identify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_base64: base64 }),
+      });
+
+      if (!apiResponse.ok) {
+        throw new Error("API request failed");
+      }
+
+      const plantData = await apiResponse.json();
+
+      setStep("saving");
+
+      const scanId =
+        Date.now().toString() + Math.random().toString(36).substring(2, 9);
+
+      await saveScan({
+        id: scanId,
+        image_uri: uri,
+        identified_name: plantData.identified ? plantData.name_common : null,
+        confidence_score: plantData.confidence ?? null,
+        timestamp: new Date().toISOString(),
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      router.push({
+        pathname: "/result",
+        params: {
+          scanId,
+          imageUri: encodeURIComponent(uri),
+          plantData: encodeURIComponent(JSON.stringify(plantData)),
+        },
+      });
+    } catch (err: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const isOffline =
+        err?.message?.includes("fetch") ||
+        err?.message?.includes("network") ||
+        err?.message?.includes("failed");
+      Alert.alert(
+        isOffline ? "No Internet Connection" : "Identification Failed",
+        isOffline
+          ? "No internet connection. Using offline data. Browse the Plant Library to find plants."
+          : "Could not identify the plant. Please try again with a clearer photo.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setStep("idle");
+    }
+  };
+
   const pickFromGallery = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow access to your photo library.");
+      Alert.alert(
+        "Permission Required",
+        "Please allow access to your photo library."
+      );
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.8,
+      quality: 0.7,
     });
-
     if (!result.canceled && result.assets[0]) {
       analyzeImage(result.assets[0].uri);
     }
@@ -49,53 +145,26 @@ export default function ScanScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow camera access to scan plants.");
+      Alert.alert(
+        "Permission Required",
+        "Please allow camera access to scan plants."
+      );
       return;
     }
-
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.8,
+      quality: 0.7,
     });
-
     if (!result.canceled && result.assets[0]) {
       analyzeImage(result.assets[0].uri);
     }
   };
 
-  const analyzeImage = async (uri: string) => {
-    setIsAnalyzing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-
-    try {
-      await new Promise((r) => setTimeout(r, 1500));
-
-      const scanId =
-        Date.now().toString() + Math.random().toString(36).substring(2, 9);
-      const scan = {
-        id: scanId,
-        image_uri: uri,
-        identified_name: null,
-        confidence_score: null,
-        timestamp: new Date().toISOString(),
-      };
-
-      await saveScan(scan);
-
-      router.push({
-        pathname: "/result",
-        params: { scanId, imageUri: uri },
-      });
-    } catch (err) {
-      Alert.alert("Error", "Failed to process image. Please try again.");
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
   return (
-    <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
+    <View
+      style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}
+    >
       <LinearGradient
         colors={["#051A13", "#000000"]}
         style={StyleSheet.absoluteFill}
@@ -120,28 +189,46 @@ export default function ScanScreen() {
             <Corner position="bl" />
             <Corner position="br" />
 
-            <View style={styles.viewfinderCenter}>
-              <Feather name="camera" size={48} color={Colors.primary.gold + "60"} />
-              <Text style={styles.viewfinderHint}>
-                Point at a plant to identify it
-              </Text>
-            </View>
+            {isAnalyzing ? (
+              <View style={styles.analyzingOverlay}>
+                <ActivityIndicator
+                  color={Colors.primary.gold}
+                  size="large"
+                />
+                <Text style={styles.analyzingOverlayText}>
+                  {STEP_LABELS[step]}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.viewfinderCenter}>
+                <Feather
+                  name="camera"
+                  size={48}
+                  color={Colors.primary.gold + "60"}
+                />
+                <Text style={styles.viewfinderHint}>
+                  Point at a plant to identify it
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
-        <View style={styles.infoBox}>
-          <Feather name="wifi-off" size={14} color={Colors.primary.gold} />
-          <Text style={styles.infoText}>
-            No internet? Plant identification requires a connection. Browse the library offline.
+        <View style={styles.aiNote}>
+          <Feather name="zap" size={14} color={Colors.primary.gold} />
+          <Text style={styles.aiNoteText}>
+            AI-powered identification — works with any plant worldwide
           </Text>
         </View>
 
         <View style={styles.buttonRow}>
           <Pressable
             onPress={pickFromGallery}
+            disabled={isAnalyzing}
             style={({ pressed }) => [
               styles.galleryBtn,
               pressed && styles.btnPressed,
+              isAnalyzing && styles.btnDisabled,
             ]}
           >
             <Feather name="image" size={22} color={Colors.primary.gold} />
@@ -154,7 +241,7 @@ export default function ScanScreen() {
             style={({ pressed }) => [
               styles.captureBtn,
               pressed && styles.btnPressed,
-              isAnalyzing && { opacity: 0.7 },
+              isAnalyzing && styles.btnDisabled,
             ]}
           >
             <LinearGradient
@@ -162,18 +249,24 @@ export default function ScanScreen() {
               style={styles.captureBtnGradient}
             >
               {isAnalyzing ? (
-                <Feather name="loader" size={28} color={Colors.primary.black} />
+                <ActivityIndicator color={Colors.primary.black} size="small" />
               ) : (
-                <Feather name="camera" size={28} color={Colors.primary.black} />
+                <Feather
+                  name="camera"
+                  size={28}
+                  color={Colors.primary.black}
+                />
               )}
             </LinearGradient>
           </Pressable>
 
           <Pressable
             onPress={() => router.push("/library")}
+            disabled={isAnalyzing}
             style={({ pressed }) => [
               styles.galleryBtn,
               pressed && styles.btnPressed,
+              isAnalyzing && styles.btnDisabled,
             ]}
           >
             <Feather name="book-open" size={22} color={Colors.primary.gold} />
@@ -182,9 +275,20 @@ export default function ScanScreen() {
         </View>
 
         {isAnalyzing && (
-          <View style={styles.analyzingBar}>
-            <Feather name="zap" size={14} color={Colors.primary.gold} />
-            <Text style={styles.analyzingText}>Identifying plant...</Text>
+          <View style={styles.progressBar}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width:
+                    step === "reading"
+                      ? "30%"
+                      : step === "identifying"
+                        ? "70%"
+                        : "95%",
+                },
+              ]}
+            />
           </View>
         )}
       </View>
@@ -270,6 +374,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
+    paddingHorizontal: 24,
+  },
+  analyzingOverlay: {
+    alignItems: "center",
+    gap: 16,
+    padding: 24,
+  },
+  analyzingOverlayText: {
+    color: Colors.primary.gold,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    textAlign: "center",
   },
   corner: {
     position: "absolute",
@@ -291,9 +407,9 @@ const styles = StyleSheet.create({
     borderTopWidth: CORNER_THICKNESS,
     borderTopRightRadius: 6,
   },
-  infoBox: {
+  aiNote: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 10,
     backgroundColor: Colors.primary.gold + "15",
     borderRadius: 12,
@@ -302,7 +418,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary.gold + "30",
     width: "100%",
   },
-  infoText: {
+  aiNoteText: {
     flex: 1,
     color: Colors.primary.textMuted,
     fontSize: 13,
@@ -352,21 +468,20 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     transform: [{ scale: 0.95 }],
   },
-  analyzingBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: Colors.primary.gold + "20",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.primary.gold + "40",
+  btnDisabled: {
+    opacity: 0.4,
   },
-  analyzingText: {
-    color: Colors.primary.gold,
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
+  progressBar: {
+    width: "100%",
+    height: 3,
+    backgroundColor: Colors.primary.separator,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: Colors.primary.gold,
+    borderRadius: 2,
   },
   disclaimer: {
     fontSize: 11,
