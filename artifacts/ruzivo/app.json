@@ -18,8 +18,7 @@
       "supportsTablet": false,
       "infoPlist": {
         "NSCameraUsageDescription": "RUZIVO uses the camera to scan and identify plants.",
-        "NSPhotoLibraryUsageDescription": "RUZIVO accesses your photo library to identify plants from existing photos.",
-        "NSMicrophoneUsageDescription": "Microphone access is required by the camera."
+        "NSPhotoLibraryUsageDescription": "RUZIVO accesses your photo library to identify plants from existing photos."
       }
     },
     "android": {
@@ -44,17 +43,10 @@
       "expo-web-browser",
       "expo-sqlite",
       [
-        "expo-camera",
-        {
-          "cameraPermission": "RUZIVO uses the camera to scan and identify plants.",
-          "microphonePermission": "Microphone access is required by the camera.",
-          "recordAudioAndroid": false
-        }
-      ],
-      [
         "expo-image-picker",
         {
-          "photosPermission": "RUZIVO accesses your photo library to identify plants from existing photos."
+          "photosPermission": "RUZIVO accesses your photo library to identify plants from existing photos.",
+          "cameraPermission": "RUZIVO uses the camera to scan and identify plants."
         }
       ]
     ],

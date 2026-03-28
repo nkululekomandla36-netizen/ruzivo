@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,13 +15,12 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { CameraView, useCameraPermissions } from "expo-camera";
 import Colors from "@/constants/colors";
 import { saveScan } from "@/lib/database";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-type ScreenState = "camera" | "preview" | "identifying" | "done";
+type ScreenState = "idle" | "preview" | "identifying";
 type ScanStep = "reading" | "identifying" | "saving";
 
 const STEP_LABELS: Record<ScanStep, string> = {
@@ -33,54 +31,69 @@ const STEP_LABELS: Record<ScanStep, string> = {
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
-  const cameraRef = useRef<CameraView>(null);
-
-  const [permission, requestPermission] = useCameraPermissions();
-  const [screenState, setScreenState] = useState<ScreenState>("camera");
+  const [cameraPermission, setCameraPermission] =
+    useState<ImagePicker.PermissionStatus | null>(null);
+  const [screenState, setScreenState] = useState<ScreenState>("idle");
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [step, setStep] = useState<ScanStep | null>(null);
-  const [facing, setFacing] = useState<"front" | "back">("back");
 
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const botPad =
     Platform.OS === "web" ? Math.max(insets.bottom, 34) : insets.bottom;
 
   useEffect(() => {
-    if (!permission?.granted) {
-      requestPermission();
-    }
+    ImagePicker.requestCameraPermissionsAsync().then((result) => {
+      setCameraPermission(result.status);
+    });
   }, []);
 
-  const takePhoto = async () => {
-    if (!cameraRef.current) return;
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
-        skipProcessing: false,
-      });
-      if (photo?.uri) {
-        setCapturedUri(photo.uri);
-        setScreenState("preview");
-      }
-    } catch {
-      Alert.alert("Error", "Failed to take photo. Please try again.");
+  const openCamera = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    setCameraPermission(status);
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Camera Permission Required",
+        "Please allow camera access in your device settings to scan plants.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setCapturedUri(result.assets[0].uri);
+      setScreenState("preview");
     }
   };
 
   const pickFromGallery = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow access to your photo library.");
+      Alert.alert(
+        "Permission Required",
+        "Please allow access to your photo library.",
+        [{ text: "OK" }]
+      );
       return;
     }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.7,
     });
+
     if (!result.canceled && result.assets[0]) {
       setCapturedUri(result.assets[0].uri);
       setScreenState("preview");
@@ -90,7 +103,7 @@ export default function ScanScreen() {
   const retake = () => {
     setCapturedUri(null);
     setStep(null);
-    setScreenState("camera");
+    setScreenState("idle");
   };
 
   const identifyPlant = async () => {
@@ -164,7 +177,7 @@ export default function ScanScreen() {
       Alert.alert(
         isOffline ? "No Internet" : "Identification Failed",
         isOffline
-          ? "You're offline. Browse the Plant Library to identify plants without internet."
+          ? "You're offline. Browse the Plant Library to find plants without internet."
           : "Could not identify this plant. Try a clearer, well-lit photo.",
         [{ text: "OK", onPress: () => setScreenState("preview") }]
       );
@@ -173,135 +186,9 @@ export default function ScanScreen() {
     }
   };
 
-  if (!permission) {
-    return (
-      <View style={[styles.container, styles.centered, { paddingTop: topPad }]}>
-        <ActivityIndicator color={Colors.primary.gold} size="large" />
-        <Text style={styles.permText}>Checking camera permission...</Text>
-      </View>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
-          >
-            <Feather name="arrow-left" size={22} color={Colors.primary.white} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Scan Plant</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.centered}>
-          <View style={styles.permIcon}>
-            <Feather name="camera-off" size={40} color={Colors.primary.gold} />
-          </View>
-          <Text style={styles.permTitle}>Camera Access Needed</Text>
-          <Text style={styles.permSubtitle}>
-            RUZIVO needs camera access to scan and identify plants.
-          </Text>
-          <Pressable
-            onPress={requestPermission}
-            style={({ pressed }) => [styles.permBtn, pressed && { opacity: 0.8 }]}
-          >
-            <Text style={styles.permBtnText}>Grant Camera Access</Text>
-          </Pressable>
-          <Pressable
-            onPress={pickFromGallery}
-            style={({ pressed }) => [styles.galleryFallbackBtn, pressed && { opacity: 0.7 }]}
-          >
-            <Feather name="image" size={16} color={Colors.primary.gold} />
-            <Text style={styles.galleryFallbackText}>Choose from Gallery Instead</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
-  if (screenState === "camera") {
-    return (
-      <View style={[styles.container, { paddingTop: topPad }]}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
-          >
-            <Feather name="arrow-left" size={22} color={Colors.primary.white} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Scan Plant</Text>
-          <Pressable
-            onPress={() => setFacing(f => f === "back" ? "front" : "back")}
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
-          >
-            <Feather name="refresh-cw" size={18} color={Colors.primary.white} />
-          </Pressable>
-        </View>
-
-        <View style={styles.cameraContainer}>
-          <CameraView
-            ref={cameraRef}
-            style={styles.camera}
-            facing={facing}
-          >
-            <Corner position="tl" />
-            <Corner position="tr" />
-            <Corner position="bl" />
-            <Corner position="br" />
-
-            <View style={styles.cameraHint}>
-              <Text style={styles.cameraHintText}>Frame the plant clearly</Text>
-            </View>
-          </CameraView>
-        </View>
-
-        <View style={[styles.controls, { paddingBottom: botPad + 16 }]}>
-          <View style={styles.aiNote}>
-            <Feather name="zap" size={13} color={Colors.primary.gold} />
-            <Text style={styles.aiNoteText}>
-              AI-powered — identifies any plant worldwide
-            </Text>
-          </View>
-
-          <View style={styles.buttonRow}>
-            <Pressable
-              onPress={pickFromGallery}
-              style={({ pressed }) => [styles.sideBtn, pressed && styles.btnPressed]}
-            >
-              <Feather name="image" size={22} color={Colors.primary.gold} />
-              <Text style={styles.sideBtnText}>Gallery</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={takePhoto}
-              style={({ pressed }) => [styles.captureBtn, pressed && styles.btnPressed]}
-            >
-              <View style={styles.captureBtnOuter}>
-                <View style={styles.captureBtnInner} />
-              </View>
-            </Pressable>
-
-            <Pressable
-              onPress={() => router.push("/library")}
-              style={({ pressed }) => [styles.sideBtn, pressed && styles.btnPressed]}
-            >
-              <Feather name="book-open" size={22} color={Colors.primary.gold} />
-              <Text style={styles.sideBtnText}>Library</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <Text style={styles.disclaimer}>For educational purposes only.</Text>
-      </View>
-    );
-  }
+  const isAnalyzing = screenState === "identifying";
 
   if (screenState === "preview" || screenState === "identifying") {
-    const isAnalyzing = screenState === "identifying";
-
     return (
       <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
         <View style={styles.header}>
@@ -318,99 +205,161 @@ export default function ScanScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.previewContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.previewImageContainer}>
-            {capturedUri ? (
-              <Image
-                source={{ uri: capturedUri }}
-                style={styles.previewImage}
-                resizeMode="cover"
-              />
-            ) : null}
-            {isAnalyzing && (
-              <View style={styles.analyzingOverlay}>
-                <ActivityIndicator color={Colors.primary.gold} size="large" />
-                <Text style={styles.analyzingText}>
-                  {step ? STEP_LABELS[step] : "Preparing..."}
-                </Text>
-              </View>
-            )}
-          </View>
+        <View style={styles.previewWrapper}>
+          {capturedUri ? (
+            <Image
+              source={{ uri: capturedUri }}
+              style={styles.previewImage}
+              resizeMode="cover"
+            />
+          ) : null}
 
           {isAnalyzing && (
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width:
-                      step === "reading"
-                        ? "30%"
-                        : step === "identifying"
-                          ? "70%"
-                          : "95%",
-                  },
-                ]}
-              />
+            <View style={styles.analyzingOverlay}>
+              <ActivityIndicator color={Colors.primary.gold} size="large" />
+              <Text style={styles.analyzingText}>
+                {step ? STEP_LABELS[step] : "Preparing..."}
+              </Text>
             </View>
           )}
+        </View>
 
-          {!isAnalyzing && (
-            <>
-              <View style={styles.previewHintCard}>
-                <Feather name="check-circle" size={18} color={Colors.primary.safe} />
-                <Text style={styles.previewHintText}>
-                  Photo captured! Tap Identify to scan this plant with AI.
-                </Text>
-              </View>
+        {isAnalyzing && (
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width:
+                    step === "reading"
+                      ? "30%"
+                      : step === "identifying"
+                        ? "70%"
+                        : "95%",
+                },
+              ]}
+            />
+          </View>
+        )}
 
-              <Pressable
-                onPress={identifyPlant}
-                style={({ pressed }) => [
-                  styles.identifyBtn,
-                  pressed && styles.btnPressed,
-                ]}
-              >
-                <Feather name="zap" size={20} color={Colors.primary.black} />
-                <Text style={styles.identifyBtnText}>Identify Plant</Text>
-              </Pressable>
+        {!isAnalyzing && (
+          <View style={styles.previewActions}>
+            <View style={styles.previewHintCard}>
+              <Feather name="check-circle" size={16} color={Colors.primary.safe} />
+              <Text style={styles.previewHintText}>
+                Photo captured! Tap Identify Plant to analyse with AI.
+              </Text>
+            </View>
 
-              <Pressable
-                onPress={retake}
-                style={({ pressed }) => [
-                  styles.retakeBtn,
-                  pressed && styles.btnPressed,
-                ]}
-              >
-                <Feather name="camera" size={18} color={Colors.primary.gold} />
-                <Text style={styles.retakeBtnText}>Retake Photo</Text>
-              </Pressable>
+            <Pressable
+              onPress={identifyPlant}
+              style={({ pressed }) => [styles.identifyBtn, pressed && styles.btnPressed]}
+            >
+              <Feather name="zap" size={20} color={Colors.primary.black} />
+              <Text style={styles.identifyBtnText}>Identify Plant</Text>
+            </Pressable>
 
-              <Pressable
-                onPress={() => router.push("/library")}
-                style={({ pressed }) => [
-                  styles.libraryOfflineBtn,
-                  pressed && styles.btnPressed,
-                ]}
-              >
-                <Feather name="book-open" size={16} color={Colors.primary.textMuted} />
-                <Text style={styles.libraryOfflineBtnText}>
-                  Browse Plant Library (Offline)
-                </Text>
-              </Pressable>
-            </>
-          )}
-        </ScrollView>
+            <Pressable
+              onPress={retake}
+              style={({ pressed }) => [styles.retakeBtn, pressed && styles.btnPressed]}
+            >
+              <Feather name="camera" size={18} color={Colors.primary.gold} />
+              <Text style={styles.retakeBtnText}>Retake Photo</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push("/library")}
+              style={({ pressed }) => [styles.libraryOfflineBtn, pressed && { opacity: 0.6 }]}
+            >
+              <Feather name="book-open" size={14} color={Colors.primary.textMuted} />
+              <Text style={styles.libraryOfflineBtnText}>Browse Plant Library (Offline)</Text>
+            </Pressable>
+          </View>
+        )}
 
         <Text style={styles.disclaimer}>For educational purposes only.</Text>
       </View>
     );
   }
 
-  return null;
+  return (
+    <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+        >
+          <Feather name="arrow-left" size={22} color={Colors.primary.white} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Scan Plant</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <View style={styles.body}>
+        <View style={styles.viewfinderBox}>
+          <Corner position="tl" />
+          <Corner position="tr" />
+          <Corner position="bl" />
+          <Corner position="br" />
+
+          <View style={styles.viewfinderCenter}>
+            <View style={styles.viewfinderIconBg}>
+              <Feather name="camera" size={52} color={Colors.primary.gold + "80"} />
+            </View>
+            <Text style={styles.viewfinderTitle}>Ready to Scan</Text>
+            <Text style={styles.viewfinderHint}>
+              Take a photo or choose from your gallery to identify any plant using AI
+            </Text>
+          </View>
+        </View>
+
+        {cameraPermission === "denied" && (
+          <View style={styles.permWarning}>
+            <Feather name="alert-circle" size={14} color={Colors.primary.caution} />
+            <Text style={styles.permWarningText}>
+              Camera access denied — you can still use Gallery
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.aiNote}>
+          <Feather name="zap" size={13} color={Colors.primary.gold} />
+          <Text style={styles.aiNoteText}>
+            AI-powered — identifies any plant worldwide
+          </Text>
+        </View>
+
+        <View style={styles.buttonRow}>
+          <Pressable
+            onPress={pickFromGallery}
+            style={({ pressed }) => [styles.sideBtn, pressed && styles.btnPressed]}
+          >
+            <Feather name="image" size={22} color={Colors.primary.gold} />
+            <Text style={styles.sideBtnText}>Gallery</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={openCamera}
+            style={({ pressed }) => [styles.captureBtn, pressed && styles.btnPressed]}
+          >
+            <View style={styles.captureBtnOuter}>
+              <View style={styles.captureBtnInner} />
+            </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/library")}
+            style={({ pressed }) => [styles.sideBtn, pressed && styles.btnPressed]}
+          >
+            <Feather name="book-open" size={22} color={Colors.primary.gold} />
+            <Text style={styles.sideBtnText}>Library</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <Text style={styles.disclaimer}>For educational purposes only.</Text>
+    </View>
+  );
 }
 
 function Corner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
@@ -434,13 +383,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primary.darkGreen,
   },
-  centered: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    gap: 16,
-  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -461,16 +403,24 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: Colors.primary.white,
   },
-  cameraContainer: {
+  body: {
     flex: 1,
-    marginHorizontal: 16,
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: Colors.primary.gold + "40",
+    paddingHorizontal: 24,
+    justifyContent: "center",
+    gap: 20,
   },
-  camera: {
-    flex: 1,
+  viewfinderBox: {
+    width: "100%",
+    aspectRatio: 1,
+    maxHeight: 320,
+    borderRadius: 20,
+    backgroundColor: Colors.primary.black + "40",
+    borderWidth: 1,
+    borderColor: Colors.primary.separator,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    overflow: "hidden",
   },
   corner: {
     position: "absolute",
@@ -478,26 +428,49 @@ const styles = StyleSheet.create({
     height: 28,
     borderColor: Colors.primary.gold,
   },
-  cameraHint: {
-    position: "absolute",
-    bottom: 16,
-    left: 0,
-    right: 0,
+  viewfinderCenter: {
     alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 32,
   },
-  cameraHintText: {
-    color: Colors.primary.white + "CC",
+  viewfinderIconBg: {
+    width: 100,
+    height: 100,
+    borderRadius: 28,
+    backgroundColor: Colors.primary.gold + "12",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.primary.gold + "25",
+  },
+  viewfinderTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.white,
+    textAlign: "center",
+  },
+  viewfinderHint: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    backgroundColor: Colors.primary.black + "60",
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+    color: Colors.primary.textMuted,
+    textAlign: "center",
+    lineHeight: 18,
   },
-  controls: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    gap: 16,
+  permWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: Colors.primary.caution + "15",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary.caution + "30",
+  },
+  permWarningText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.caution,
   },
   aiNote: {
     flexDirection: "row",
@@ -511,9 +484,9 @@ const styles = StyleSheet.create({
   },
   aiNoteText: {
     flex: 1,
-    color: Colors.primary.textMuted,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
+    color: Colors.primary.textMuted,
   },
   buttonRow: {
     flexDirection: "row",
@@ -571,68 +544,11 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     paddingTop: 4,
   },
-  permIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: Colors.primary.cardBg,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Colors.primary.gold + "40",
-  },
-  permTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: Colors.primary.white,
-    textAlign: "center",
-  },
-  permSubtitle: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.primary.textMuted,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  permBtn: {
-    backgroundColor: Colors.primary.gold,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 14,
-    width: "100%",
-    alignItems: "center",
-  },
-  permBtnText: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    color: Colors.primary.black,
-  },
-  permText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.primary.textMuted,
-    marginTop: 12,
-  },
-  galleryFallbackBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 12,
-  },
-  galleryFallbackText: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.primary.gold,
-  },
-  previewContent: {
-    paddingHorizontal: 20,
-    gap: 12,
-    paddingBottom: 8,
-  },
-  previewImageContainer: {
+  previewWrapper: {
+    flex: 1,
+    marginHorizontal: 20,
     borderRadius: 20,
     overflow: "hidden",
-    height: 300,
     backgroundColor: Colors.primary.black,
     position: "relative",
   },
@@ -659,6 +575,8 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 4,
+    marginHorizontal: 20,
+    marginTop: 8,
     backgroundColor: Colors.primary.separator,
     borderRadius: 2,
     overflow: "hidden",
@@ -668,13 +586,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary.gold,
     borderRadius: 2,
   },
+  previewActions: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    gap: 10,
+  },
   previewHintCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     backgroundColor: Colors.primary.safe + "15",
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
     borderWidth: 1,
     borderColor: Colors.primary.safe + "30",
   },
@@ -705,7 +628,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 15,
     borderWidth: 1.5,
     borderColor: Colors.primary.gold + "50",
     backgroundColor: Colors.primary.gold + "10",
@@ -720,7 +643,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   libraryOfflineBtnText: {
     fontSize: 13,
