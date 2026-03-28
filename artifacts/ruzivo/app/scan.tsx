@@ -47,6 +47,18 @@ export default function ScanScreen() {
     });
   }, []);
 
+  const saveToLocalFile = async (uri: string): Promise<string> => {
+    if (Platform.OS === "web") return uri;
+    try {
+      const filename = `plant_${Date.now()}.jpg`;
+      const dest = `${FileSystem.cacheDirectory}${filename}`;
+      await FileSystem.copyAsync({ from: uri, to: dest });
+      return dest;
+    } catch {
+      return uri;
+    }
+  };
+
   const openCamera = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -62,15 +74,21 @@ export default function ScanScreen() {
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
-    });
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        quality: 0.7,
+        exif: false,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      setCapturedUri(result.assets[0].uri);
-      setScreenState("preview");
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const rawUri = result.assets[0].uri;
+        const localUri = await saveToLocalFile(rawUri);
+        setCapturedUri(localUri);
+        setScreenState("preview");
+      }
+    } catch (err: any) {
+      Alert.alert("Camera Error", "Could not open the camera. Try using Gallery instead.");
     }
   };
 
@@ -87,16 +105,22 @@ export default function ScanScreen() {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.7,
+        exif: false,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      setCapturedUri(result.assets[0].uri);
-      setScreenState("preview");
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const rawUri = result.assets[0].uri;
+        const localUri = await saveToLocalFile(rawUri);
+        setCapturedUri(localUri);
+        setScreenState("preview");
+      }
+    } catch (err: any) {
+      Alert.alert("Gallery Error", "Could not open the gallery.");
     }
   };
 
