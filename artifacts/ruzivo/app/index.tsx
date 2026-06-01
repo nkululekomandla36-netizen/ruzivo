@@ -14,16 +14,29 @@ import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useDatabase } from "@/context/DatabaseContext";
 import { getAllPlants } from "@/lib/database";
+import { getBushMode, saveBushMode } from "@/lib/offlineService";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { isReady } = useDatabase();
   const [plantCount, setPlantCount] = useState(0);
+  const [bushMode, setBushModeState] = useState(false);
 
   useEffect(() => {
     if (!isReady) return;
     getAllPlants().then((plants) => setPlantCount(plants.length)).catch(() => {});
   }, [isReady]);
+
+  useEffect(() => {
+    getBushMode().then(setBushModeState);
+  }, []);
+
+  const toggleBushMode = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const next = !bushMode;
+    setBushModeState(next);
+    saveBushMode(next);
+  };
 
   const topPad =
     Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
@@ -103,6 +116,30 @@ export default function HomeScreen() {
         <View style={styles.statDivider} />
         <StatItem icon="map-pin" label="African Focus" />
       </View>
+
+      <Pressable
+        onPress={toggleBushMode}
+        style={({ pressed }) => [
+          styles.bushModeToggle,
+          bushMode && styles.bushModeToggleActive,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <View style={styles.bushModeLeft}>
+          <Text style={styles.bushModeEmoji}>🌿</Text>
+          <View>
+            <Text style={[styles.bushModeLabel, bushMode && styles.bushModeLabelActive]}>
+              Bush Mode
+            </Text>
+            <Text style={styles.bushModeDesc}>
+              {bushMode ? "ON — Using cached offline data" : "OFF — Live identification active"}
+            </Text>
+          </View>
+        </View>
+        <View style={[styles.bushModeIndicator, bushMode && styles.bushModeIndicatorActive]}>
+          <View style={[styles.bushModeKnob, bushMode && styles.bushModeKnobActive]} />
+        </View>
+      </Pressable>
 
       <Text style={styles.disclaimer}>
         For educational purposes only. Not a substitute for medical advice.
@@ -275,5 +312,65 @@ const styles = StyleSheet.create({
     color: Colors.primary.textMuted + "88",
     textAlign: "center",
     marginBottom: 8,
+  },
+  bushModeToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.primary.cardBg,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary.separator,
+  },
+  bushModeToggleActive: {
+    borderColor: Colors.primary.gold + "60",
+    backgroundColor: Colors.primary.gold + "10",
+  },
+  bushModeLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  bushModeEmoji: {
+    fontSize: 22,
+  },
+  bushModeLabel: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.textMuted,
+  },
+  bushModeLabelActive: {
+    color: Colors.primary.gold,
+  },
+  bushModeDesc: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.textMuted + "99",
+    marginTop: 2,
+  },
+  bushModeIndicator: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: Colors.primary.separator,
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  bushModeIndicatorActive: {
+    backgroundColor: Colors.primary.gold,
+  },
+  bushModeKnob: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.primary.textMuted,
+    alignSelf: "flex-start",
+  },
+  bushModeKnobActive: {
+    backgroundColor: Colors.primary.black,
+    alignSelf: "flex-end",
   },
 });

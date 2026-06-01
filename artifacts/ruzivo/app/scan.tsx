@@ -17,6 +17,11 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import Colors from "@/constants/colors";
 import { saveScan } from "@/lib/database";
+import {
+  getBushMode,
+  cacheLastPlant,
+  getLastCachedPlant,
+} from "@/lib/offlineService";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -36,6 +41,7 @@ export default function ScanScreen() {
   const [screenState, setScreenState] = useState<ScreenState>("idle");
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [step, setStep] = useState<ScanStep | null>(null);
+  const [bushMode, setBushMode] = useState(false);
 
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const botPad =
@@ -45,6 +51,7 @@ export default function ScanScreen() {
     ImagePicker.requestCameraPermissionsAsync().then((result) => {
       setCameraPermission(result.status);
     });
+    getBushMode().then(setBushMode);
   }, []);
 
   const saveToLocalFile = async (uri: string): Promise<string> => {
@@ -135,8 +142,47 @@ export default function ScanScreen() {
     setScreenState("identifying");
 
     try {
-      let base64: string | null = null;
+      setStep("identifying");
 
+      // Bush Mode: skip API, use last cached plant result
+      if (bushMode) {
+        setStep("saving");
+        const cached = await getLastCachedPlant();
+        const plantData = cached ?? {
+          identified: false,
+          name_common: "Unknown",
+          name_scientific: "",
+          confidence: 0,
+          safety_status: "Safe",
+          description: "Bush Mode is ON. Connect to the internet and scan again for full identification.",
+          uses: [],
+          warnings: [],
+          traditional_uses: [],
+          local_names: {},
+          source: "offline",
+        };
+        const scanId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+        await saveScan({
+          id: scanId,
+          image_uri: capturedUri,
+          identified_name: (plantData as any).identified ? (plantData as any).name_common : null,
+          confidence_score: (plantData as any).confidence ?? null,
+          timestamp: new Date().toISOString(),
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.push({
+          pathname: "/result",
+          params: {
+            scanId,
+            imageUri: encodeURIComponent(capturedUri),
+            plantData: encodeURIComponent(JSON.stringify(plantData)),
+          },
+        });
+        return;
+      }
+
+      // Online mode: use API (existing logic unchanged)
+      let base64: string | null = null;
       setStep("reading");
 
       if (Platform.OS !== "web") {
@@ -168,6 +214,9 @@ export default function ScanScreen() {
       if (!apiResponse.ok) throw new Error("API failed");
 
       const plantData = await apiResponse.json();
+
+      // Cache the result for Bush Mode fallback
+      await cacheLastPlant(plantData);
 
       setStep("saving");
 

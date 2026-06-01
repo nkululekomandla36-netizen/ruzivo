@@ -1,0 +1,123 @@
+DO NOT change, remove, or refactor any existing working code.
+
+Only ADD a new offline system to the existing RUZIVO app.
+
+Goal: Add “Bush Mode” offline functionality WITHOUT breaking current AI or online features.
+
+---
+
+## 1. ADD OFFLINE DATA LAYER (NEW FILE ONLY)
+
+Create a new file:
+
+/src/offline/plantsDatabase.js
+
+It must contain a simple structure like this:
+
+export const offlinePlants = [
+  {
+    id: "aloe_ferox",
+    name: "Aloe Ferox",
+    category: "medicinal",
+    image: null,
+    africanKnowledge: {
+      uses: "Traditionally used for skin healing and digestion",
+      preparation: "Apply gel externally or process sap carefully",
+      warnings: "Strong in high doses"
+    }
+  }
+];
+
+This file is ONLY for offline fallback data.
+
+DO NOT replace existing API or backend data.
+
+---
+
+## 2. ADD OFFLINE SERVICE (NEW FILE ONLY)
+
+Create:
+
+/src/services/offlineMode.js
+
+Add logic:
+
+export const isOfflineMode = (isOnline, bushModeEnabled) => {
+  return !isOnline || bushModeEnabled;
+};
+
+export const getOfflinePlant = (plantId, offlinePlants) => {
+  return offlinePlants.find(p => p.id === plantId);
+};
+
+This file must NOT touch existing API logic.
+
+---
+
+## 3. ADD BUSH MODE TOGGLE (UI ONLY)
+
+In the HomeScreen or Settings screen:
+
+ADD a toggle state:
+
+const [bushMode, setBushMode] = useState(false);
+
+ADD a simple toggle button:
+
+<TouchableOpacity onPress={() => setBushMode(!bushMode)}>
+  <Text>
+    {bushMode ? "🌿 Bush Mode ON" : "🌿 Bush Mode OFF"}
+  </Text>
+</TouchableOpacity>
+
+DO NOT change existing UI layout.
+
+Only add this component.
+
+---
+
+## 4. ADD OFFLINE FALLBACK LOGIC (VERY IMPORTANT)
+
+Where plant results are displayed:
+
+ADD logic:
+
+if (bushMode || !isOnline) {
+  use offlinePlants database first
+} else {
+  use existing AI/API system
+}
+
+DO NOT remove or replace AI logic.
+
+Only wrap it as fallback.
+
+---
+
+## 5. ADD SIMPLE CACHE SYSTEM (OPTIONAL SAFE ADD)
+
+When AI returns a plant result:
+
+Store it locally:
+
+AsyncStorage.setItem("lastPlant", JSON.stringify(plant));
+
+Then in offline mode:
+
+Load last known plants from storage.
+
+---
+
+## FINAL RULES (STRICT)
+
+- DO NOT remove existing AI or API calls
+- DO NOT refactor current working code
+- ONLY ADD new files and new logic
+- App must continue working exactly as before
+- Offline mode must act as fallback only
+
+---
+
+GOAL:
+RUZIVO must still work online exactly the same,
+but now also work in bush/offline mode using local plant data.
