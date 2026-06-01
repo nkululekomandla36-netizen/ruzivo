@@ -25,7 +25,7 @@ type ScanStep = "reading" | "identifying" | "saving";
 
 const STEP_LABELS: Record<ScanStep, string> = {
   reading: "Reading image...",
-  identifying: "Identifying plant with AI...",
+  identifying: "Identifying plant...",
   saving: "Saving results...",
 };
 
@@ -271,7 +271,7 @@ export default function ScanScreen() {
             <View style={styles.previewHintCard}>
               <Feather name="check-circle" size={16} color={Colors.primary.safe} />
               <Text style={styles.previewHintText}>
-                Photo captured! Tap Identify Plant to analyse with AI.
+                Photo captured! Tap Identify Plant to analyse.
               </Text>
             </View>
 
@@ -332,7 +332,7 @@ export default function ScanScreen() {
             </View>
             <Text style={styles.viewfinderTitle}>Ready to Scan</Text>
             <Text style={styles.viewfinderHint}>
-              Take a photo or choose from your gallery to identify any plant using AI
+              Take a photo or choose from your gallery to identify any plant
             </Text>
           </View>
         </View>
@@ -349,7 +349,7 @@ export default function ScanScreen() {
         <View style={styles.aiNote}>
           <Feather name="zap" size={13} color={Colors.primary.gold} />
           <Text style={styles.aiNoteText}>
-            AI-powered — identifies any plant worldwide
+Identifies any plant worldwide
           </Text>
         </View>
 

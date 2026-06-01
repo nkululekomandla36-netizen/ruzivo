@@ -101,7 +101,7 @@ export default function ResultScreen() {
             />
             <View style={styles.imageBadge}>
               <Feather name="zap" size={12} color={Colors.primary.gold} />
-              <Text style={styles.imageBadgeText}>AI Identified</Text>
+              <Text style={styles.imageBadgeText}>Identified</Text>
             </View>
           </View>
         ) : null}
@@ -283,7 +283,7 @@ function UnidentifiedResult({
             Plant Not Identified
           </Text>
           <Text style={[styles.description, { textAlign: "center" }]}>
-            The AI could not identify a plant in this image. Try a clearer photo with better lighting and focus on the plant.
+            Could not identify a plant in this image. Try a clearer photo with better lighting and focus on the plant.
           </Text>
         </View>
         <View style={styles.actionsRow}>
