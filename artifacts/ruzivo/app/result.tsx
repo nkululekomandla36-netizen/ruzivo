@@ -128,14 +128,14 @@ export default function ResultScreen() {
         <View style={styles.identityCard}>
           <View style={styles.identityTop}>
             <View style={styles.identityNames}>
-              <Text style={styles.commonName}>{plantData.name_common}</Text>
-              <Text style={styles.scientificName}>{plantData.name_scientific}</Text>
+              <Text selectable style={styles.commonName}>{plantData.name_common}</Text>
+              <Text selectable style={styles.scientificName}>{plantData.name_scientific}</Text>
             </View>
             <SafetyBadge status={plantData.safety_status} size="large" />
           </View>
 
           {plantData.description ? (
-            <Text style={styles.description}>{plantData.description}</Text>
+            <Text selectable style={styles.description}>{plantData.description}</Text>
           ) : null}
 
           <View style={styles.confidenceRow}>
@@ -198,8 +198,8 @@ export default function ResultScreen() {
               </View>
               {Object.entries(plantData.local_names).map(([lang, name]) => (
                 <View key={lang} style={styles.localNameRow}>
-                  <Text style={styles.localLang}>{lang}</Text>
-                  <Text style={styles.localName}>{name}</Text>
+                  <Text selectable style={styles.localLang}>{lang}</Text>
+                  <Text selectable style={styles.localName}>{name}</Text>
                 </View>
               ))}
             </View>
@@ -222,7 +222,7 @@ export default function ResultScreen() {
                   </View>
                   <Text style={styles.cardTitle}>Plant Overview</Text>
                 </View>
-                <Text style={styles.overviewText}>{knowledge.overview}</Text>
+                <Text selectable style={styles.overviewText}>{knowledge.overview}</Text>
               </View>
             ) : null}
 
@@ -324,7 +324,7 @@ function ResultSection({
       {items.map((item, i) => (
         <View key={i} style={styles.listItem}>
           <View style={[styles.bullet, { backgroundColor: color }]} />
-          <Text style={styles.listItemText}>{item}</Text>
+          <Text selectable style={styles.listItemText}>{item}</Text>
         </View>
       ))}
     </View>
