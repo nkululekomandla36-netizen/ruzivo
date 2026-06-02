@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Pressable,
   Platform,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,6 +15,10 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { SafetyBadge } from "@/components/SafetyBadge";
+import {
+  fetchPlantKnowledge,
+  type PlantKnowledge,
+} from "@/lib/plantKnowledgeService";
 
 interface PlantData {
   identified: boolean;
@@ -36,6 +41,8 @@ export default function ResultScreen() {
       plantData: string;
     }>();
   const insets = useSafeAreaInsets();
+  const [knowledge, setKnowledge] = useState<PlantKnowledge | null>(null);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
 
   const topPad =
     Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
@@ -48,6 +55,18 @@ export default function ResultScreen() {
       plantData = JSON.parse(decodeURIComponent(plantDataRaw)) as PlantData;
     }
   } catch {}
+
+  useEffect(() => {
+    if (!plantData?.identified) return;
+    setKnowledgeLoading(true);
+    fetchPlantKnowledge(
+      plantData.name_common,
+      plantData.name_scientific,
+      plantData.safety_status
+    )
+      .then(setKnowledge)
+      .finally(() => setKnowledgeLoading(false));
+  }, [plantDataRaw]);
 
   const decodedUri = imageUri ? decodeURIComponent(imageUri) : null;
   const confidence = plantData?.confidence ?? 0;
@@ -185,6 +204,74 @@ export default function ResultScreen() {
               ))}
             </View>
           )}
+
+        {knowledgeLoading && (
+          <View style={styles.knowledgeLoading}>
+            <ActivityIndicator size="small" color={Colors.primary.gold} />
+            <Text style={styles.knowledgeLoadingText}>Loading plant knowledge...</Text>
+          </View>
+        )}
+
+        {knowledge && (
+          <>
+            {knowledge.overview ? (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={[styles.cardIconBg, { backgroundColor: Colors.primary.gold + "22" }]}>
+                    <Feather name="book" size={16} color={Colors.primary.gold} />
+                  </View>
+                  <Text style={styles.cardTitle}>Plant Overview</Text>
+                </View>
+                <Text style={styles.overviewText}>{knowledge.overview}</Text>
+              </View>
+            ) : null}
+
+            {knowledge.traditional_knowledge?.length > 0 && (
+              <ResultSection
+                icon="sun"
+                title="Traditional Knowledge"
+                color={Colors.primary.gold}
+                items={knowledge.traditional_knowledge}
+              />
+            )}
+
+            {knowledge.medicinal_cultural_uses?.length > 0 && (
+              <ResultSection
+                icon="heart"
+                title="Medicinal & Cultural Uses"
+                color={Colors.primary.safe}
+                items={knowledge.medicinal_cultural_uses}
+              />
+            )}
+
+            {knowledge.safety_information?.length > 0 && (
+              <ResultSection
+                icon="shield"
+                title="Safety Information"
+                color={Colors.primary.caution}
+                items={knowledge.safety_information}
+              />
+            )}
+
+            {knowledge.habitat_ecology?.length > 0 && (
+              <ResultSection
+                icon="compass"
+                title="Habitat & Ecology"
+                color={Colors.primary.lightGreen}
+                items={knowledge.habitat_ecology}
+              />
+            )}
+
+            {knowledge.conservation_notes?.length > 0 && (
+              <ResultSection
+                icon="feather"
+                title="Conservation Notes"
+                color={Colors.primary.textMuted}
+                items={knowledge.conservation_notes}
+              />
+            )}
+          </>
+        )}
 
         <View style={styles.actionsRow}>
           <Pressable
@@ -552,5 +639,27 @@ const styles = StyleSheet.create({
     color: Colors.primary.textMuted + "88",
     textAlign: "center",
     paddingBottom: 8,
+  },
+  knowledgeLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 16,
+    backgroundColor: Colors.primary.cardBg,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary.separator,
+  },
+  knowledgeLoadingText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.textMuted,
+  },
+  overviewText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.white,
+    lineHeight: 22,
   },
 });

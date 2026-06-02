@@ -1,0 +1,157 @@
+Add Google Gemini to RUZIVO as a background knowledge service.
+
+IMPORTANT RULES:
+
+- DO NOT remove, replace, or modify any existing plant identification functionality.
+- DO NOT change any existing UI layouts unless required for the new feature.
+- DO NOT display the words:
+  - AI
+  - Artificial Intelligence
+  - Powered by AI
+  - Powered by Gemini
+  - Gemini
+    anywhere in the user interface.
+
+The experience must feel like a natural plant knowledge system.
+
+---
+
+GOAL
+
+Enhance plant information pages with richer educational content and traditional knowledge summaries.
+
+---
+
+STEP 1: ADD GEMINI SERVICE
+
+Create a new service:
+
+src/services/plantKnowledgeService.js
+
+This service should:
+
+- Accept plant identification results
+- Generate educational summaries
+- Generate traditional-use summaries
+- Generate safety notes
+- Generate ecological information
+- Generate conservation information when available
+
+The service must be separate from existing identification logic.
+
+---
+
+STEP 2: KEEP EXISTING IDENTIFICATION SYSTEM
+
+Do not change:
+
+- Camera scanning
+- Plant recognition
+- Classification
+- Search
+- Existing plant database
+
+The current identification system must continue working exactly as it does now.
+
+Gemini should only enrich information after identification is complete.
+
+---
+
+STEP 3: ENHANCE PLANT DETAILS SCREEN
+
+When a plant has been identified, add new sections:
+
+Plant Overview
+
+Traditional Knowledge
+
+Medicinal and Cultural Uses
+
+Safety Information
+
+Habitat and Ecology
+
+Conservation Notes
+
+These sections should appear naturally as part of the plant profile.
+
+Do not mention AI or Gemini.
+
+---
+
+STEP 4: AFRICAN KNOWLEDGE PRIORITY
+
+When generating information:
+
+Prioritize:
+
+- Southern African plant knowledge
+- Indigenous knowledge systems
+- Traditional uses
+- Cultural significance
+- Environmental context
+
+Avoid unsupported medical claims.
+
+Use language such as:
+
+"Traditionally used for..."
+"Historically associated with..."
+"Often used by communities for..."
+"Reported traditional uses include..."
+
+Never state that a plant cures or treats diseases.
+
+---
+
+STEP 5: OFFLINE COMPATIBILITY
+
+When internet is available:
+
+Generate enhanced knowledge content.
+
+When internet is unavailable:
+
+Use the existing plant database and offline content.
+
+The application must never fail because the enhancement service is unavailable.
+
+Offline functionality must remain fully operational.
+
+---
+
+STEP 6: CACHING
+
+Store generated plant profiles locally.
+
+If a user previously viewed a plant profile:
+
+Load the cached profile when offline.
+
+This should improve bush/offline usability.
+
+---
+
+STEP 7: USER EXPERIENCE
+
+The user should simply experience:
+
+- Richer plant information
+- Better educational content
+- More African traditional knowledge
+- Improved plant profiles
+
+No technical terms should be shown to users.
+
+---
+
+FINAL REQUIREMENTS
+
+- Do not remove existing features.
+- Do not rename existing features.
+- Do not add AI branding.
+- Do not add Gemini branding.
+- Do not change the current plant identification workflow.
+- Add functionality only.
+- Preserve all existing behaviour.
+- Ensure graceful offline fallback.
