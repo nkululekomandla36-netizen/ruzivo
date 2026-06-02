@@ -1,0 +1,131 @@
+nkululekomandla36-netizen
+ruzivo
+Repository navigation
+Code
+Issues
+Pull requests
+Actions
+Projects
+Wiki
+Security and quality
+Insights
+Settings
+Owner avatar
+ruzivo
+Public
+nkululekomandla36-netizen/ruzivo
+Go to file
+t
+T
+Name		
+replit-agent
+replit-agent
+Add collapsible section for African plant knowledge with local fallback
+4ee36b0
+ · 
+2 hours ago
+artifacts
+Add collapsible section for African plant knowledge with local fallback
+2 hours ago
+attached_assets
+Add collapsible section for African plant knowledge with local fallback
+2 hours ago
+lib
+Add rich plant knowledge and traditional uses to the app
+3 hours ago
+scripts
+Initial commit
+3 months ago
+.gitignore
+Initial commit
+3 months ago
+.npmrc
+Initial commit
+3 months ago
+.replit
+Initial commit
+3 months ago
+.replitignore
+Initial commit
+3 months ago
+package.json
+Initial commit
+3 months ago
+pnpm-lock.yaml
+Add rich plant knowledge and traditional uses to the app
+3 hours ago
+pnpm-workspace.yaml
+Initial commit
+3 months ago
+replit.md
+Update project dependencies for app icon and component setup
+3 months ago
+tsconfig.base.json
+Initial commit
+3 months ago
+tsconfig.json
+Add rich plant knowledge and traditional uses to the app
+3 hours ago
+Repository files navigation
+README
+Add a README
+Help people interested in this repository understand your project.
+
+About
+African Plant Intelligence System powered by traditional knowledge and modern plant science
+
+ Activity
+Stars
+ 0 stars
+Watchers
+ 0 watching
+Forks
+ 0 forks
+Releases
+No releases published
+Create a new release
+Packages
+No packages published
+Publish your first package
+Contributors
+2
+@replit-agent
+replit-agent Replit Agent
+@nkululekomandla36-netizen
+nkululekomandla36-netizen
+Languages
+TypeScript
+89.8%
+ 
+JavaScript
+5.3%
+ 
+HTML
+3.8%
+ 
+CSS
+1.1%
+Suggested workflows
+Based on your tech stack
+Datadog Synthetics logo
+Datadog Synthetics
+Run Datadog Synthetic tests within your GitHub Actions workflow
+SLSA Generic generator logo
+SLSA Generic generator
+Generate SLSA3 provenance for your existing release workflows
+Webpack logo
+Webpack
+Build a NodeJS project with npm and webpack.
+More workflows
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information
