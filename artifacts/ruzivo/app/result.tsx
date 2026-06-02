@@ -19,6 +19,8 @@ import {
   fetchPlantKnowledge,
   type PlantKnowledge,
 } from "@/lib/plantKnowledgeService";
+import PlantKnowledgeCard from "@/components/PlantKnowledgeCard";
+import { findLocalKnowledge } from "@/lib/traditionalKnowledge";
 
 interface PlantData {
   identified: boolean;
@@ -43,6 +45,7 @@ export default function ResultScreen() {
   const insets = useSafeAreaInsets();
   const [knowledge, setKnowledge] = useState<PlantKnowledge | null>(null);
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [knowledgeExpanded, setKnowledgeExpanded] = useState(false);
 
   const topPad =
     Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
@@ -205,73 +208,107 @@ export default function ResultScreen() {
             </View>
           )}
 
-        {knowledgeLoading && (
-          <View style={styles.knowledgeLoading}>
-            <ActivityIndicator size="small" color={Colors.primary.gold} />
-            <Text style={styles.knowledgeLoadingText}>Loading plant knowledge...</Text>
-          </View>
-        )}
+        {(() => {
+          const local = findLocalKnowledge(
+            plantData.name_common,
+            plantData.name_scientific
+          );
+          const trad = knowledge?.traditional_knowledge ?? local?.traditionalKnowledge ?? [];
+          const uses = knowledge?.medicinal_cultural_uses ?? local?.traditionalUses ?? [];
+          const safety = knowledge?.safety_information ?? local?.safetyNotes ?? [];
+          const eco = knowledge?.habitat_ecology ?? local?.ecology ?? [];
+          const cons = knowledge?.conservation_notes ?? local?.conservation ?? [];
+          const overview = knowledge?.overview ?? null;
+          const hasAny =
+            trad.length > 0 ||
+            uses.length > 0 ||
+            safety.length > 0 ||
+            eco.length > 0 ||
+            cons.length > 0 ||
+            !!overview;
 
-        {knowledge && (
-          <>
-            {knowledge.overview ? (
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View style={[styles.cardIconBg, { backgroundColor: Colors.primary.gold + "22" }]}>
-                    <Feather name="book" size={16} color={Colors.primary.gold} />
+          if (!hasAny && !knowledgeLoading) return null;
+
+          return (
+            <>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setKnowledgeExpanded((v) => !v);
+                }}
+                style={({ pressed }) => [
+                  styles.knowledgeToggle,
+                  pressed && { opacity: 0.75 },
+                ]}
+              >
+                <View style={styles.knowledgeToggleLeft}>
+                  <View style={styles.knowledgeToggleIcon}>
+                    <Text style={styles.knowledgeToggleEmoji}>🌍</Text>
                   </View>
-                  <Text style={styles.cardTitle}>Plant Overview</Text>
+                  <Text style={styles.knowledgeToggleLabel}>
+                    African Plant Knowledge
+                  </Text>
                 </View>
-                <Text selectable style={styles.overviewText}>{knowledge.overview}</Text>
-              </View>
-            ) : null}
+                {knowledgeLoading ? (
+                  <ActivityIndicator size="small" color={Colors.primary.gold} />
+                ) : (
+                  <Feather
+                    name={knowledgeExpanded ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color={Colors.primary.gold}
+                  />
+                )}
+              </Pressable>
 
-            {knowledge.traditional_knowledge?.length > 0 && (
-              <ResultSection
-                icon="sun"
-                title="Traditional Knowledge"
-                color={Colors.primary.gold}
-                items={knowledge.traditional_knowledge}
-              />
-            )}
+              {knowledgeExpanded && (
+                <>
+                  {overview ? (
+                    <View style={styles.card}>
+                      <View style={styles.cardHeader}>
+                        <View style={[styles.cardIconBg, { backgroundColor: Colors.primary.gold + "22" }]}>
+                          <Feather name="book" size={16} color={Colors.primary.gold} />
+                        </View>
+                        <Text style={styles.cardTitle}>Plant Overview</Text>
+                      </View>
+                      <Text selectable style={styles.overviewText}>{overview}</Text>
+                    </View>
+                  ) : null}
 
-            {knowledge.medicinal_cultural_uses?.length > 0 && (
-              <ResultSection
-                icon="heart"
-                title="Medicinal & Cultural Uses"
-                color={Colors.primary.safe}
-                items={knowledge.medicinal_cultural_uses}
-              />
-            )}
-
-            {knowledge.safety_information?.length > 0 && (
-              <ResultSection
-                icon="shield"
-                title="Safety Information"
-                color={Colors.primary.caution}
-                items={knowledge.safety_information}
-              />
-            )}
-
-            {knowledge.habitat_ecology?.length > 0 && (
-              <ResultSection
-                icon="compass"
-                title="Habitat & Ecology"
-                color={Colors.primary.lightGreen}
-                items={knowledge.habitat_ecology}
-              />
-            )}
-
-            {knowledge.conservation_notes?.length > 0 && (
-              <ResultSection
-                icon="feather"
-                title="Conservation Notes"
-                color={Colors.primary.textMuted}
-                items={knowledge.conservation_notes}
-              />
-            )}
-          </>
-        )}
+                  <PlantKnowledgeCard
+                    title="Traditional Knowledge"
+                    items={trad}
+                    icon="sun"
+                    color={Colors.primary.gold}
+                  />
+                  <PlantKnowledgeCard
+                    title="Traditional Uses"
+                    items={uses}
+                    icon="heart"
+                    color={Colors.primary.safe}
+                  />
+                  <PlantKnowledgeCard
+                    title="Safety Notes"
+                    items={safety}
+                    icon="shield"
+                    color={Colors.primary.caution}
+                  />
+                  <PlantKnowledgeCard
+                    title="Ecology & Habitat"
+                    items={eco}
+                    icon="compass"
+                    color={Colors.primary.lightGreen}
+                  />
+                  <PlantKnowledgeCard
+                    title="Conservation Notes"
+                    items={cons}
+                    icon="feather"
+                    color={Colors.primary.textMuted}
+                  />
+                </>
+              )}
+            </>
+          );
+        })()}
 
         <View style={styles.actionsRow}>
           <Pressable
@@ -637,6 +674,38 @@ const styles = StyleSheet.create({
     color: Colors.primary.textMuted + "88",
     textAlign: "center",
     paddingBottom: 8,
+  },
+  knowledgeToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.primary.cardBg,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary.gold + "40",
+  },
+  knowledgeToggleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  knowledgeToggleIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: Colors.primary.gold + "18",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  knowledgeToggleEmoji: {
+    fontSize: 18,
+  },
+  knowledgeToggleLabel: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.gold,
   },
   knowledgeLoading: {
     flexDirection: "row",

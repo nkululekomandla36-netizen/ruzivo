@@ -1,0 +1,219 @@
+RUZIVO IS WORKING CORRECTLY.
+
+DO NOT REMOVE, REPLACE, OR MODIFY ANY EXISTING IDENTIFICATION LOGIC.
+
+DO NOT CHANGE:
+
+- Camera scanning
+- Plant identification
+- Confidence scoring
+- Existing Uses section
+- Existing Warnings section
+- Existing UI styling
+
+ONLY ADD NEW KNOWLEDGE SECTIONS BELOW THE CURRENT WARNINGS CARD.
+
+====================================================
+NEW SECTIONS TO ADD
+
+After the existing Warnings card, add the following cards:
+
+1. Traditional Knowledge
+2. Traditional Uses
+3. Safety Notes
+4. Ecology & Habitat
+5. Conservation Notes
+
+These must use the same card styling already used throughout the app.
+
+====================================================
+CREATE NEW COMPONENT
+
+Create:
+
+src/components/PlantKnowledgeCard.jsx
+
+Example structure:
+
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+const PlantKnowledgeCard = ({ title, items }) => {
+if (!items || items.length === 0) return null;
+
+return (
+<View style={styles.card}>
+<Text style={styles.title}>{title}</Text>
+
+  {items.map((item, index) => (
+    <Text key={index} style={styles.item}>
+      • {item}
+    </Text>
+  ))}
+</View>
+
+);
+};
+
+export default PlantKnowledgeCard;
+
+====================================================
+ADD KNOWLEDGE DATA STRUCTURE
+
+Create:
+
+src/data/traditionalKnowledge.js
+
+Example:
+
+export const traditionalKnowledge = {
+snake_plant: {
+traditionalKnowledge: [
+'Historically associated with San and Khoi fibre production.',
+'Used as a living boundary marker around homesteads.',
+'Often associated with protection traditions.'
+],
+
+traditionalUses: [
+  'Leaf fibres traditionally used for cordage.',
+  'Reported traditional use for minor skin applications.',
+  'Historically used in household craft production.'
+],
+
+safetyNotes: [
+  'Contains saponins.',
+  'May cause stomach discomfort if ingested.',
+  'May irritate sensitive skin.'
+],
+
+ecology: [
+  'Native to tropical and subtropical Africa.',
+  'Thrives in well-drained soils.',
+  'Supports small insects and reptiles.'
+],
+
+conservation: [
+  'Generally considered stable.',
+  'Sustainable harvesting is recommended.'
+]
+
+}
+};
+
+====================================================
+RESULT SCREEN INTEGRATION
+
+In the Plant Result screen:
+
+Import:
+
+import PlantKnowledgeCard from '../components/PlantKnowledgeCard';
+import { traditionalKnowledge } from '../data/traditionalKnowledge';
+
+Locate the identified plant.
+
+Example:
+
+const plantKnowledge =
+traditionalKnowledge[identifiedPlant.id];
+
+Then render BELOW the existing warnings card:
+
+<PlantKnowledgeCard
+title="Traditional Knowledge"
+items={plantKnowledge?.traditionalKnowledge}
+/>
+
+<PlantKnowledgeCard
+title="Traditional Uses"
+items={plantKnowledge?.traditionalUses}
+/>
+
+<PlantKnowledgeCard
+title="Safety Notes"
+items={plantKnowledge?.safetyNotes}
+/>
+
+<PlantKnowledgeCard
+title="Ecology & Habitat"
+items={plantKnowledge?.ecology}
+/>
+
+<PlantKnowledgeCard
+title="Conservation Notes"
+items={plantKnowledge?.conservation}
+/>
+
+====================================================
+OPTIONAL COLLAPSIBLE SECTION
+
+Add:
+
+African Plant Knowledge ▼
+
+When tapped:
+
+Show:
+
+- Traditional Knowledge
+- Traditional Uses
+- Safety Notes
+- Ecology & Habitat
+- Conservation Notes
+
+This keeps the screen clean.
+
+====================================================
+GOOGLE GEMINI INTEGRATION
+
+Add Gemini ONLY as a background enrichment service.
+
+DO NOT display:
+
+AI
+Artificial Intelligence
+Powered by AI
+Gemini
+Powered by Gemini
+
+Gemini should only generate:
+
+- Traditional Knowledge
+- Traditional Uses
+- Safety Notes
+- Ecology
+- Conservation
+
+and save the results locally.
+
+If Gemini fails:
+
+Display local database information.
+
+The app must continue functioning normally.
+
+====================================================
+OFFLINE SUPPORT
+
+Store generated plant knowledge in AsyncStorage.
+
+When offline:
+
+Load cached plant knowledge.
+
+The user must still be able to read plant information in Bush Mode.
+
+====================================================
+FINAL RULES
+
+ADD ONLY.
+
+DO NOT DELETE ANY EXISTING CODE.
+
+DO NOT CHANGE IDENTIFICATION LOGIC.
+
+DO NOT CHANGE CAMERA LOGIC.
+
+DO NOT CHANGE CURRENT UI DESIGN.
+
+ONLY ADD NEW KNOWLEDGE CARDS, GEMINI ENRICHMENT, LOCAL CACHE, AND OFFLINE SUPPORT.
