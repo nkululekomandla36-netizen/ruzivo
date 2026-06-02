@@ -313,6 +313,7 @@ function ResultSection({
   color: string;
   items: string[];
 }) {
+  const combined = items.map((item) => `• ${item}`).join("\n");
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -321,12 +322,9 @@ function ResultSection({
         </View>
         <Text style={styles.cardTitle}>{title}</Text>
       </View>
-      {items.map((item, i) => (
-        <View key={i} style={styles.listItem}>
-          <View style={[styles.bullet, { backgroundColor: color }]} />
-          <Text selectable style={styles.listItemText}>{item}</Text>
-        </View>
-      ))}
+      <Text selectable style={[styles.listItemText, { lineHeight: 24 }]}>
+        {combined}
+      </Text>
     </View>
   );
 }
