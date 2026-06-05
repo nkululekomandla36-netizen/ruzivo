@@ -42,6 +42,7 @@ export default function ScanScreen() {
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [step, setStep] = useState<ScanStep | null>(null);
   const [bushMode, setBushMode] = useState(false);
+  const [hasCachedPlant, setHasCachedPlant] = useState<boolean | null>(null);
 
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const botPad =
@@ -52,6 +53,7 @@ export default function ScanScreen() {
       setCameraPermission(result.status);
     });
     getBushMode().then(setBushMode);
+    getLastCachedPlant().then((cached) => setHasCachedPlant(cached !== null));
   }, []);
 
   const saveToLocalFile = async (uri: string): Promise<string> => {
@@ -146,21 +148,26 @@ export default function ScanScreen() {
 
       // Bush Mode: skip API, use last cached plant result
       if (bushMode) {
-        setStep("saving");
         const cached = await getLastCachedPlant();
-        const plantData = cached ?? {
-          identified: false,
-          name_common: "Unknown",
-          name_scientific: "",
-          confidence: 0,
-          safety_status: "Safe",
-          description: "Bush Mode is ON. Connect to the internet and scan again for full identification.",
-          uses: [],
-          warnings: [],
-          traditional_uses: [],
-          local_names: {},
-          source: "offline",
-        };
+
+        if (!cached) {
+          setScreenState("preview");
+          Alert.alert(
+            "No Offline Data Yet",
+            "Bush Mode uses your last successful online scan as offline data.\n\nYou need to scan at least one plant with internet first to build your offline cache.\n\nTurn off Bush Mode to identify this plant now.",
+            [
+              {
+                text: "Go to Plant Library",
+                onPress: () => router.push("/library"),
+              },
+              { text: "OK", style: "default" },
+            ]
+          );
+          return;
+        }
+
+        setStep("saving");
+        const plantData = cached;
         const scanId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
         await saveScan({
           id: scanId,
@@ -397,12 +404,32 @@ export default function ScanScreen() {
           </View>
         )}
 
-        <View style={styles.aiNote}>
-          <Feather name="zap" size={13} color={Colors.primary.gold} />
-          <Text style={styles.aiNoteText}>
-Identifies any plant worldwide
-          </Text>
-        </View>
+        {bushMode && hasCachedPlant === false && (
+          <View style={styles.bushWarning}>
+            <Feather name="alert-triangle" size={14} color={Colors.primary.caution} />
+            <Text style={styles.bushWarningText}>
+              Bush Mode is ON but no offline data exists yet. Scan one plant with internet first to build your cache.
+            </Text>
+          </View>
+        )}
+
+        {bushMode && hasCachedPlant === true && (
+          <View style={styles.bushReady}>
+            <Text style={styles.bushReadyEmoji}>🌿</Text>
+            <Text style={styles.bushReadyText}>
+              Bush Mode — offline data ready. Will return your last scanned plant.
+            </Text>
+          </View>
+        )}
+
+        {!bushMode && (
+          <View style={styles.aiNote}>
+            <Feather name="zap" size={13} color={Colors.primary.gold} />
+            <Text style={styles.aiNoteText}>
+              Identifies any plant worldwide
+            </Text>
+          </View>
+        )}
 
         <View style={styles.buttonRow}>
           <Pressable
@@ -562,6 +589,43 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     color: Colors.primary.textMuted,
+  },
+  bushWarning: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: Colors.primary.caution + "15",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary.caution + "40",
+  },
+  bushWarningText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.caution,
+    lineHeight: 18,
+  },
+  bushReady: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: Colors.primary.gold + "12",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary.gold + "30",
+  },
+  bushReadyEmoji: {
+    fontSize: 16,
+  },
+  bushReadyText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.textMuted,
+    lineHeight: 18,
   },
   buttonRow: {
     flexDirection: "row",
