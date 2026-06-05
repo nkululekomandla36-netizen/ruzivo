@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
-const CACHE_PREFIX = "RUZIVO_KNOWLEDGE_";
+const CACHE_PREFIX = "RUZIVO_KNOWLEDGE_v2_";
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export interface PlantKnowledge {
@@ -11,6 +11,9 @@ export interface PlantKnowledge {
   safety_information: string[];
   habitat_ecology: string[];
   conservation_notes: string[];
+  nutritional_profile: string[];
+  active_compounds: string[];
+  health_benefits: string[];
 }
 
 interface CacheEntry {

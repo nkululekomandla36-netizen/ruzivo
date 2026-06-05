@@ -218,6 +218,9 @@ export default function ResultScreen() {
           const safety = knowledge?.safety_information ?? local?.safetyNotes ?? [];
           const eco = knowledge?.habitat_ecology ?? local?.ecology ?? [];
           const cons = knowledge?.conservation_notes ?? local?.conservation ?? [];
+          const nutri = knowledge?.nutritional_profile ?? local?.nutritionalProfile ?? [];
+          const compounds = knowledge?.active_compounds ?? local?.activeCompounds ?? [];
+          const benefits = knowledge?.health_benefits ?? local?.healthBenefits ?? [];
           const overview = knowledge?.overview ?? null;
           const hasAny =
             trad.length > 0 ||
@@ -225,6 +228,9 @@ export default function ResultScreen() {
             safety.length > 0 ||
             eco.length > 0 ||
             cons.length > 0 ||
+            nutri.length > 0 ||
+            compounds.length > 0 ||
+            benefits.length > 0 ||
             !!overview;
 
           if (!hasAny && !knowledgeLoading) return null;
@@ -303,6 +309,24 @@ export default function ResultScreen() {
                     items={cons}
                     icon="feather"
                     color={Colors.primary.textMuted}
+                  />
+                  <PlantKnowledgeCard
+                    title="Nutritional & Healing Profile"
+                    items={nutri}
+                    icon="activity"
+                    color="#4CAF82"
+                  />
+                  <PlantKnowledgeCard
+                    title="Active Compounds"
+                    items={compounds}
+                    icon="zap"
+                    color="#9B7FD4"
+                  />
+                  <PlantKnowledgeCard
+                    title="Potential Health Benefits"
+                    items={benefits}
+                    icon="star"
+                    color={Colors.primary.gold}
                   />
                 </>
               )}
