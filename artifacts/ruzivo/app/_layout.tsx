@@ -33,6 +33,7 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen name="result" />
+      <Stack.Screen name="history" />
     </Stack>
   );
 }

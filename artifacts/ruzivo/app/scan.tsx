@@ -168,6 +168,7 @@ export default function ScanScreen() {
           identified_name: (plantData as any).identified ? (plantData as any).name_common : null,
           confidence_score: (plantData as any).confidence ?? null,
           timestamp: new Date().toISOString(),
+          plant_data_json: JSON.stringify(plantData),
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.push({
@@ -229,6 +230,7 @@ export default function ScanScreen() {
         identified_name: plantData.identified ? plantData.name_common : null,
         confidence_score: plantData.confidence ?? null,
         timestamp: new Date().toISOString(),
+        plant_data_json: JSON.stringify(plantData),
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

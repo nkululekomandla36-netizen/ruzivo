@@ -8,6 +8,8 @@ import {
   Platform,
   Image,
   ActivityIndicator,
+  Alert,
+  ToastAndroid,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,6 +23,16 @@ import {
 } from "@/lib/plantKnowledgeService";
 import PlantKnowledgeCard from "@/components/PlantKnowledgeCard";
 import { findLocalKnowledge } from "@/lib/traditionalKnowledge";
+import {
+  saveReport,
+  deleteReport,
+  isReportSaved,
+} from "@/lib/savedReports";
+import {
+  buildReportText,
+  copyReportToClipboard,
+  shareReport,
+} from "@/lib/reportExport";
 
 interface PlantData {
   identified: boolean;
@@ -46,6 +58,8 @@ export default function ResultScreen() {
   const [knowledge, setKnowledge] = useState<PlantKnowledge | null>(null);
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [knowledgeExpanded, setKnowledgeExpanded] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
 
   const topPad =
     Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
@@ -71,6 +85,11 @@ export default function ResultScreen() {
       .finally(() => setKnowledgeLoading(false));
   }, [plantDataRaw]);
 
+  useEffect(() => {
+    if (!scanId) return;
+    isReportSaved(scanId).then(setIsSaved);
+  }, [scanId]);
+
   const decodedUri = imageUri ? decodeURIComponent(imageUri) : null;
   const confidence = plantData?.confidence ?? 0;
   const confidencePercent = Math.round(confidence * 100);
@@ -83,6 +102,91 @@ export default function ResultScreen() {
   const handleLibrary = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push("/library");
+  };
+
+  const getMergedSections = () => {
+    if (!plantData) return null;
+    const local = findLocalKnowledge(plantData.name_common, plantData.name_scientific);
+    return {
+      nameCommon: plantData.name_common,
+      nameScientific: plantData.name_scientific,
+      confidence: plantData.confidence,
+      safetyStatus: plantData.safety_status,
+      description: plantData.description ?? "",
+      uses: plantData.uses ?? [],
+      warnings: plantData.warnings ?? [],
+      traditionalUses: plantData.traditional_uses ?? [],
+      localNames: plantData.local_names ?? {},
+      traditionalKnowledge: knowledge?.traditional_knowledge ?? local?.traditionalKnowledge ?? [],
+      medicinalUses: knowledge?.medicinal_cultural_uses ?? local?.traditionalUses ?? [],
+      safetyNotes: knowledge?.safety_information ?? local?.safetyNotes ?? [],
+      ecology: knowledge?.habitat_ecology ?? local?.ecology ?? [],
+      conservation: knowledge?.conservation_notes ?? local?.conservation ?? [],
+      nutritionalProfile: knowledge?.nutritional_profile ?? local?.nutritionalProfile ?? [],
+      activeCompounds: knowledge?.active_compounds ?? local?.activeCompounds ?? [],
+      healthBenefits: knowledge?.health_benefits ?? local?.healthBenefits ?? [],
+      overview: knowledge?.overview ?? null,
+    };
+  };
+
+  const handleSave = async () => {
+    if (!plantData || !scanId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSaveLoading(true);
+    try {
+      if (isSaved) {
+        await deleteReport(scanId);
+        setIsSaved(false);
+        if (Platform.OS === "android") {
+          ToastAndroid.show("Removed from saved plants", ToastAndroid.SHORT);
+        } else {
+          Alert.alert("Removed", `"${plantData.name_common}" removed from saved plants.`);
+        }
+      } else {
+        await saveReport({
+          id: scanId,
+          savedAt: new Date().toISOString(),
+          imageUri: decodedUri,
+          plantData: plantData as any,
+          knowledge: knowledge as any,
+        });
+        setIsSaved(true);
+        if (Platform.OS === "android") {
+          ToastAndroid.show("Plant saved!", ToastAndroid.SHORT);
+        } else {
+          Alert.alert("Saved!", `"${plantData.name_common}" has been saved to your plant library.`);
+        }
+      }
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleCopyReport = async () => {
+    const sections = getMergedSections();
+    if (!sections) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const text = buildReportText(sections);
+      await copyReportToClipboard(text);
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Report copied to clipboard!", ToastAndroid.SHORT);
+      } else {
+        Alert.alert("Copied!", "The full plant report has been copied to your clipboard.");
+      }
+    } catch {
+      Alert.alert("Error", "Could not copy report. Try again.");
+    }
+  };
+
+  const handleShare = async () => {
+    const sections = getMergedSections();
+    if (!sections || !plantData) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const text = buildReportText(sections);
+      await shareReport(text, plantData.name_common);
+    } catch {}
   };
 
   if (!plantData || !plantData.identified) {
@@ -333,6 +437,43 @@ export default function ResultScreen() {
             </>
           );
         })()}
+
+        <View style={styles.exportRow}>
+          <Pressable
+            onPress={handleSave}
+            disabled={saveLoading}
+            style={({ pressed }) => [
+              styles.exportBtn,
+              isSaved && styles.exportBtnSaved,
+              pressed && styles.btnPressed,
+            ]}
+          >
+            <Feather
+              name={isSaved ? "bookmark" : "bookmark"}
+              size={16}
+              color={isSaved ? Colors.primary.black : Colors.primary.gold}
+            />
+            <Text style={[styles.exportBtnText, isSaved && styles.exportBtnTextSaved]}>
+              {isSaved ? "Saved" : "Save Plant"}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleCopyReport}
+            style={({ pressed }) => [styles.exportBtn, pressed && styles.btnPressed]}
+          >
+            <Feather name="copy" size={16} color={Colors.primary.gold} />
+            <Text style={styles.exportBtnText}>Copy Report</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleShare}
+            style={({ pressed }) => [styles.exportBtn, pressed && styles.btnPressed]}
+          >
+            <Feather name="share-2" size={16} color={Colors.primary.gold} />
+            <Text style={styles.exportBtnText}>Share</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.actionsRow}>
           <Pressable
@@ -639,6 +780,36 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: Colors.primary.white,
     fontStyle: "italic",
+  },
+  exportRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  exportBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.primary.gold + "50",
+    backgroundColor: Colors.primary.gold + "10",
+  },
+  exportBtnSaved: {
+    backgroundColor: Colors.primary.gold,
+    borderColor: Colors.primary.gold,
+  },
+  exportBtnText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.gold,
+  },
+  exportBtnTextSaved: {
+    color: Colors.primary.black,
   },
   actionsRow: {
     flexDirection: "row",

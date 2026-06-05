@@ -19,6 +19,7 @@ export interface Scan {
   identified_name: string | null;
   confidence_score: number | null;
   timestamp: string;
+  plant_data_json?: string;
 }
 
 const SEED_PLANTS: Plant[] = [
