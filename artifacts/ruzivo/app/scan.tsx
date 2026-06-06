@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,16 +17,16 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import Colors from "@/constants/colors";
-import { saveScan } from "@/lib/database";
+import { saveScan, getAllPlants, type Plant } from "@/lib/database";
+import { SafetyBadge } from "@/components/SafetyBadge";
 import {
   getBushMode,
   cacheLastPlant,
-  getLastCachedPlant,
 } from "@/lib/offlineService";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-type ScreenState = "idle" | "preview" | "identifying";
+type ScreenState = "idle" | "preview" | "identifying" | "bush-pick";
 type ScanStep = "reading" | "identifying" | "saving";
 
 const STEP_LABELS: Record<ScanStep, string> = {
@@ -42,7 +43,7 @@ export default function ScanScreen() {
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [step, setStep] = useState<ScanStep | null>(null);
   const [bushMode, setBushMode] = useState(false);
-  const [hasCachedPlant, setHasCachedPlant] = useState<boolean | null>(null);
+  const [localPlants, setLocalPlants] = useState<Plant[]>([]);
 
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const botPad =
@@ -53,7 +54,7 @@ export default function ScanScreen() {
       setCameraPermission(result.status);
     });
     getBushMode().then(setBushMode);
-    getLastCachedPlant().then((cached) => setHasCachedPlant(cached !== null));
+    getAllPlants().then(setLocalPlants).catch(() => {});
   }, []);
 
   const saveToLocalFile = async (uri: string): Promise<string> => {
@@ -139,6 +140,41 @@ export default function ScanScreen() {
     setScreenState("idle");
   };
 
+  const selectOfflinePlant = async (plant: Plant) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const plantData = {
+      identified: true,
+      name_common: plant.name_common,
+      name_scientific: plant.name_scientific,
+      confidence: 1.0,
+      safety_status: plant.safety_status,
+      description: `${plant.name_common} — full knowledge from the RUZIVO offline library.`,
+      uses: plant.uses,
+      warnings: plant.warnings,
+      traditional_uses: plant.traditional_uses,
+      local_names: plant.local_names,
+      source: "offline",
+    };
+    const scanId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    await saveScan({
+      id: scanId,
+      image_uri: capturedUri ?? "",
+      identified_name: plant.name_common,
+      confidence_score: 1.0,
+      timestamp: new Date().toISOString(),
+      plant_data_json: JSON.stringify(plantData),
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.push({
+      pathname: "/result",
+      params: {
+        scanId,
+        imageUri: encodeURIComponent(capturedUri ?? ""),
+        plantData: encodeURIComponent(JSON.stringify(plantData)),
+      },
+    });
+  };
+
   const identifyPlant = async () => {
     if (!capturedUri) return;
     setScreenState("identifying");
@@ -146,48 +182,8 @@ export default function ScanScreen() {
     try {
       setStep("identifying");
 
-      // Bush Mode: skip API, use last cached plant result
-      if (bushMode) {
-        const cached = await getLastCachedPlant();
-
-        if (!cached) {
-          setScreenState("preview");
-          Alert.alert(
-            "No Offline Data Yet",
-            "Bush Mode uses your last successful online scan as offline data.\n\nYou need to scan at least one plant with internet first to build your offline cache.\n\nTurn off Bush Mode to identify this plant now.",
-            [
-              {
-                text: "Go to Plant Library",
-                onPress: () => router.push("/library"),
-              },
-              { text: "OK", style: "default" },
-            ]
-          );
-          return;
-        }
-
-        setStep("saving");
-        const plantData = cached;
-        const scanId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
-        await saveScan({
-          id: scanId,
-          image_uri: capturedUri,
-          identified_name: (plantData as any).identified ? (plantData as any).name_common : null,
-          confidence_score: (plantData as any).confidence ?? null,
-          timestamp: new Date().toISOString(),
-          plant_data_json: JSON.stringify(plantData),
-        });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.push({
-          pathname: "/result",
-          params: {
-            scanId,
-            imageUri: encodeURIComponent(capturedUri),
-            plantData: encodeURIComponent(JSON.stringify(plantData)),
-          },
-        });
-        return;
-      }
+      // Bush Mode is handled via the plant picker (bush-pick screen)
+      // This code path is only reached in online mode
 
       // Online mode: use API (existing logic unchanged)
       let base64: string | null = null;
@@ -270,6 +266,54 @@ export default function ScanScreen() {
 
   const isAnalyzing = screenState === "identifying";
 
+  if (screenState === "bush-pick") {
+    return (
+      <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => setScreenState("preview")}
+            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+          >
+            <Feather name="arrow-left" size={22} color={Colors.primary.white} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Select Plant</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.bushPickBanner}>
+          <Text style={styles.bushPickEmoji}>🌿</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bushPickTitle}>Which plant is this?</Text>
+            <Text style={styles.bushPickSubtitle}>
+              Bush Mode — select from 20 offline plants. No internet needed.
+            </Text>
+          </View>
+        </View>
+
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 8 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {localPlants.map((plant) => (
+            <Pressable
+              key={plant.id}
+              onPress={() => selectOfflinePlant(plant)}
+              style={({ pressed }) => [styles.plantPickerCard, pressed && styles.btnPressed]}
+            >
+              <View style={styles.plantPickerInfo}>
+                <Text style={styles.plantPickerName}>{plant.name_common}</Text>
+                <Text style={styles.plantPickerSci}>{plant.name_scientific}</Text>
+              </View>
+              <SafetyBadge status={plant.safety_status} />
+              <Feather name="chevron-right" size={18} color={Colors.primary.textMuted} />
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+
   if (screenState === "preview" || screenState === "identifying") {
     return (
       <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
@@ -326,19 +370,27 @@ export default function ScanScreen() {
 
         {!isAnalyzing && (
           <View style={styles.previewActions}>
-            <View style={styles.previewHintCard}>
-              <Feather name="check-circle" size={16} color={Colors.primary.safe} />
+            <View style={[styles.previewHintCard, bushMode && styles.previewHintCardBush]}>
+              <Feather
+                name={bushMode ? "list" : "check-circle"}
+                size={16}
+                color={bushMode ? Colors.primary.gold : Colors.primary.safe}
+              />
               <Text style={styles.previewHintText}>
-                Photo captured! Tap Identify Plant to analyse.
+                {bushMode
+                  ? "Bush Mode — tap below to select the plant from your offline library."
+                  : "Photo captured! Tap Identify Plant to analyse."}
               </Text>
             </View>
 
             <Pressable
-              onPress={identifyPlant}
+              onPress={bushMode ? () => setScreenState("bush-pick") : identifyPlant}
               style={({ pressed }) => [styles.identifyBtn, pressed && styles.btnPressed]}
             >
-              <Feather name="zap" size={20} color={Colors.primary.black} />
-              <Text style={styles.identifyBtnText}>Identify Plant</Text>
+              <Feather name={bushMode ? "list" : "zap"} size={20} color={Colors.primary.black} />
+              <Text style={styles.identifyBtnText}>
+                {bushMode ? "Select Plant (Offline)" : "Identify Plant"}
+              </Text>
             </Pressable>
 
             <Pressable
@@ -404,25 +456,14 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {bushMode && hasCachedPlant === false && (
-          <View style={styles.bushWarning}>
-            <Feather name="alert-triangle" size={14} color={Colors.primary.caution} />
-            <Text style={styles.bushWarningText}>
-              Bush Mode is ON but no offline data exists yet. Scan one plant with internet first to build your cache.
-            </Text>
-          </View>
-        )}
-
-        {bushMode && hasCachedPlant === true && (
+        {bushMode ? (
           <View style={styles.bushReady}>
             <Text style={styles.bushReadyEmoji}>🌿</Text>
             <Text style={styles.bushReadyText}>
-              Bush Mode — offline data ready. Will return your last scanned plant.
+              Bush Mode ON — photograph a plant, then select it from your offline library of 20 plants.
             </Text>
           </View>
-        )}
-
-        {!bushMode && (
+        ) : (
           <View style={styles.aiNote}>
             <Feather name="zap" size={13} color={Colors.primary.gold} />
             <Text style={styles.aiNoteText}>
@@ -590,22 +631,61 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: Colors.primary.textMuted,
   },
-  bushWarning: {
+  bushPickBanner: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    backgroundColor: Colors.primary.caution + "15",
-    borderRadius: 12,
-    padding: 12,
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    backgroundColor: Colors.primary.gold + "12",
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: Colors.primary.caution + "40",
+    borderColor: Colors.primary.gold + "30",
   },
-  bushWarningText: {
-    flex: 1,
+  bushPickEmoji: {
+    fontSize: 28,
+  },
+  bushPickTitle: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.white,
+  },
+  bushPickSubtitle: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: Colors.primary.caution,
-    lineHeight: 18,
+    color: Colors.primary.textMuted,
+    marginTop: 2,
+    lineHeight: 17,
+  },
+  plantPickerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary.cardBg,
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary.separator,
+  },
+  plantPickerInfo: {
+    flex: 1,
+  },
+  plantPickerName: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.white,
+  },
+  plantPickerSci: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.textMuted,
+    fontStyle: "italic",
+    marginTop: 2,
+  },
+  previewHintCardBush: {
+    borderColor: Colors.primary.gold + "40",
+    backgroundColor: Colors.primary.gold + "10",
   },
   bushReady: {
     flexDirection: "row",

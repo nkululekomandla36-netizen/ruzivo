@@ -152,7 +152,7 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.bushModeDesc}>
               {bushMode
-                ? "ON — Returns your last online scan offline"
+                ? "ON — Offline plant picker from 20 local plants"
                 : "OFF — Live plant identification active"}
             </Text>
           </View>
