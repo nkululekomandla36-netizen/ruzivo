@@ -6,6 +6,7 @@ import {
   Pressable,
   Platform,
   StatusBar,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,6 +16,7 @@ import Colors from "@/constants/colors";
 import { useDatabase } from "@/context/DatabaseContext";
 import { getAllPlants } from "@/lib/database";
 import { getBushMode, saveBushMode } from "@/lib/offlineService";
+import PlantGallery from "@/components/PlantGallery";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -59,28 +61,29 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
+    <View style={[styles.outerContainer, { paddingTop: topPad }]}>
       <StatusBar barStyle="light-content" />
-
-      <View style={styles.header}>
-        <View style={styles.logoRow}>
-          <Feather name="feather" size={28} color={Colors.primary.gold} />
-          <Text style={styles.appTitle}>RUZIVO</Text>
-        </View>
-        <Text style={styles.tagline}>Plant Knowledge. Offline First.</Text>
-      </View>
-
-      <View style={styles.heroSection}>
-        <View style={styles.heroIcon}>
-          <View style={styles.heroIconBg}>
-            <Feather name="activity" size={48} color={Colors.primary.gold} />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 8 }]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <View style={styles.header}>
+          <View style={styles.logoRow}>
+            <Feather name="feather" size={28} color={Colors.primary.gold} />
+            <Text style={styles.appTitle}>RUZIVO</Text>
           </View>
+          <Text style={styles.tagline}>Plant Knowledge. Offline First.</Text>
         </View>
-        <Text style={styles.heroTitle}>Discover the{"\n"}Power of Plants</Text>
-        <Text style={styles.heroSubtitle}>
-          Identify, learn and explore African botanical knowledge — even without internet.
-        </Text>
-      </View>
+
+        <View style={styles.heroSection}>
+          <PlantGallery />
+          <Text style={styles.heroTitle}>Discover the{"\n"}Power of Plants</Text>
+          <Text style={styles.heroSubtitle}>
+            Identify, learn and explore African botanical knowledge — even without internet.
+          </Text>
+        </View>
 
       <View style={styles.actions}>
         <Pressable
@@ -152,7 +155,7 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.bushModeDesc}>
               {bushMode
-                ? "ON — Offline plant picker from 20 local plants"
+                ? "ON — Offline plant picker from 35 local plants"
                 : "OFF — Live plant identification active"}
             </Text>
           </View>
@@ -162,9 +165,10 @@ export default function HomeScreen() {
         </View>
       </Pressable>
 
-      <Text style={styles.disclaimer}>
-        For educational purposes only. Not a substitute for medical advice.
-      </Text>
+        <Text style={styles.disclaimer}>
+          For educational purposes only. Not a substitute for medical advice.
+        </Text>
+      </ScrollView>
     </View>
   );
 }
@@ -185,14 +189,19 @@ function StatItem({
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     flex: 1,
     backgroundColor: Colors.primary.darkGreen,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 24,
   },
   header: {
     marginTop: 16,
-    marginBottom: 32,
+    marginBottom: 22,
   },
   logoRow: {
     flexDirection: "row",
@@ -213,23 +222,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   heroSection: {
-    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-  },
-  heroIcon: {
-    marginBottom: 8,
-  },
-  heroIconBg: {
-    width: 100,
-    height: 100,
-    borderRadius: 28,
-    backgroundColor: Colors.primary.black + "40",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Colors.primary.gold + "40",
+    gap: 18,
+    marginBottom: 28,
   },
   heroTitle: {
     fontSize: 34,
