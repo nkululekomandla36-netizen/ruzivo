@@ -37,7 +37,7 @@ const SLIDES: PlantSlide[] = [
   },
   {
     id: "3",
-    uri: "https://images.unsplash.com/photo-1528360983277-13d401cdc186?auto=format&fit=crop&w=800&q=75",
+    uri: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=75",
     name: "Tropical Leaves",
     category: "Indigenous Flora",
   },
@@ -49,7 +49,7 @@ const SLIDES: PlantSlide[] = [
   },
   {
     id: "5",
-    uri: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=75",
+    uri: "https://images.unsplash.com/photo-1515023115689-589c33041d3c?auto=format&fit=crop&w=800&q=75",
     name: "Healing Herbs",
     category: "Traditional Medicine",
   },
