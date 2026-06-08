@@ -6,7 +6,6 @@ import {
   Pressable,
   Platform,
   StatusBar,
-  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -61,29 +60,24 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={[styles.outerContainer, { paddingTop: topPad }]}>
+    <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
       <StatusBar barStyle="light-content" />
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 8 }]}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        <View style={styles.header}>
-          <View style={styles.logoRow}>
-            <Feather name="feather" size={28} color={Colors.primary.gold} />
-            <Text style={styles.appTitle}>RUZIVO</Text>
-          </View>
-          <Text style={styles.tagline}>Plant Knowledge. Offline First.</Text>
-        </View>
 
-        <View style={styles.heroSection}>
-          <PlantGallery />
-          <Text style={styles.heroTitle}>Discover the{"\n"}Power of Plants</Text>
-          <Text style={styles.heroSubtitle}>
-            Identify, learn and explore African botanical knowledge — even without internet.
-          </Text>
+      <View style={styles.header}>
+        <View style={styles.logoRow}>
+          <Feather name="feather" size={28} color={Colors.primary.gold} />
+          <Text style={styles.appTitle}>RUZIVO</Text>
         </View>
+        <Text style={styles.tagline}>Plant Knowledge. Offline First.</Text>
+      </View>
+
+      <View style={styles.heroSection}>
+        <PlantGallery />
+        <Text style={styles.heroTitle}>Discover the{"\n"}Power of Plants</Text>
+        <Text style={styles.heroSubtitle}>
+          Identify, learn and explore African botanical knowledge — even without internet.
+        </Text>
+      </View>
 
       <View style={styles.actions}>
         <Pressable
@@ -132,7 +126,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.statsRow}>
-        <StatItem icon="database" label={plantCount > 0 ? `${plantCount} Plants` : "20 Plants"} />
+        <StatItem icon="database" label={plantCount > 0 ? `${plantCount} Plants` : "35 Plants"} />
         <View style={styles.statDivider} />
         <StatItem icon="wifi-off" label="Offline Ready" />
         <View style={styles.statDivider} />
@@ -165,10 +159,9 @@ export default function HomeScreen() {
         </View>
       </Pressable>
 
-        <Text style={styles.disclaimer}>
-          For educational purposes only. Not a substitute for medical advice.
-        </Text>
-      </ScrollView>
+      <Text style={styles.disclaimer}>
+        For educational purposes only. Not a substitute for medical advice.
+      </Text>
     </View>
   );
 }
@@ -189,19 +182,14 @@ function StatItem({
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
+  container: {
     flex: 1,
     backgroundColor: Colors.primary.darkGreen,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
     paddingHorizontal: 24,
   },
   header: {
     marginTop: 16,
-    marginBottom: 22,
+    marginBottom: 20,
   },
   logoRow: {
     flexDirection: "row",
@@ -222,28 +210,29 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   heroSection: {
+    flex: 1,
     alignItems: "center",
-    gap: 18,
-    marginBottom: 28,
+    justifyContent: "center",
+    gap: 14,
   },
   heroTitle: {
-    fontSize: 34,
+    fontSize: 30,
     fontFamily: "Inter_700Bold",
     color: Colors.primary.white,
     textAlign: "center",
-    lineHeight: 42,
+    lineHeight: 38,
   },
   heroSubtitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: Colors.primary.textMuted,
     textAlign: "center",
-    lineHeight: 22,
-    paddingHorizontal: 16,
+    lineHeight: 20,
+    paddingHorizontal: 8,
   },
   actions: {
-    gap: 12,
-    marginBottom: 28,
+    gap: 10,
+    marginBottom: 20,
   },
   primaryButton: {
     borderRadius: 16,
@@ -254,14 +243,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 20,
   },
   secondaryButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     borderRadius: 16,
     borderWidth: 1.5,
@@ -298,10 +287,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 12,
     backgroundColor: Colors.primary.cardBg,
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     borderWidth: 1,
     borderColor: Colors.primary.separator,
   },
@@ -335,8 +324,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: Colors.primary.cardBg,
     borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: Colors.primary.separator,
   },
