@@ -15,6 +15,13 @@ import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { Plant, getPlantById } from "@/lib/database";
 import { SafetyBadge } from "@/components/SafetyBadge";
+import {
+  LANGUAGE_REGISTRY,
+  REGION_ORDER,
+  groupLanguagesByRegion,
+  NOT_RECORDED,
+} from "@/lib/languageRegistry";
+import { getMergedLocalNames } from "@/lib/localNamesExtended";
 
 const PLANT_COLORS: Record<string, string> = {
   "aloe-vera": "#2ECC71",
@@ -137,14 +144,7 @@ export default function PlantDetailScreen() {
             </View>
             <Text style={styles.cardTitle}>Local Names</Text>
           </View>
-          <View style={styles.localNamesGrid}>
-            {Object.entries(plant.local_names).map(([lang, name]) => (
-              <View key={lang} style={styles.localNameItem}>
-                <Text style={styles.localNameLang}>{lang}</Text>
-                <Text style={styles.localNameValue}>{name}</Text>
-              </View>
-            ))}
-          </View>
+          <LocalNamesSection plantId={plant.id} baseNames={plant.local_names} />
         </View>
 
         <View style={styles.disclaimerBox}>
@@ -155,6 +155,52 @@ export default function PlantDetailScreen() {
           </Text>
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+function LocalNamesSection({
+  plantId,
+  baseNames,
+}: {
+  plantId: string;
+  baseNames: Record<string, string>;
+}) {
+  const merged = getMergedLocalNames(plantId, baseNames);
+  const byRegion = groupLanguagesByRegion();
+
+  return (
+    <View style={styles.localNamesGrid}>
+      {REGION_ORDER.map((region) => {
+        const langs = byRegion.get(region);
+        if (!langs) return null;
+        const relevant = langs.filter(
+          (l) => merged[l.code] || LANGUAGE_REGISTRY.some((r) => r.code === l.code)
+        );
+        if (!relevant.length) return null;
+        return (
+          <View key={region}>
+            <Text style={styles.regionHeader}>{region}</Text>
+            {relevant.map((lang) => {
+              const name = merged[lang.code];
+              const isRecorded = !!name;
+              return (
+                <View key={lang.code} style={styles.localNameItem}>
+                  <Text style={styles.localNameLang}>{lang.label}</Text>
+                  <Text
+                    style={[
+                      styles.localNameValue,
+                      !isRecorded && styles.localNameNotRecorded,
+                    ]}
+                  >
+                    {name ?? NOT_RECORDED}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -324,7 +370,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   localNamesGrid: {
-    gap: 8,
+    gap: 4,
+  },
+  regionHeader: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.gold + "BB",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginTop: 10,
+    marginBottom: 4,
+    paddingHorizontal: 4,
   },
   localNameItem: {
     flexDirection: "row",
@@ -334,17 +390,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: Colors.primary.separator,
     borderRadius: 10,
+    marginBottom: 4,
   },
   localNameLang: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
     color: Colors.primary.textMuted,
+    flex: 1,
   },
   localNameValue: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     color: Colors.primary.white,
     fontStyle: "italic",
+    textAlign: "right",
+    flex: 1,
+  },
+  localNameNotRecorded: {
+    color: Colors.primary.textMuted + "88",
+    fontStyle: "italic",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
   },
   disclaimerBox: {
     flexDirection: "row",
