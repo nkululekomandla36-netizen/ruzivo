@@ -33,6 +33,8 @@ import {
   copyReportToClipboard,
   shareReport,
 } from "@/lib/reportExport";
+import { getAllPlants, type Plant } from "@/lib/database";
+import { addPendingPlant } from "@/lib/pendingPlants";
 
 interface PlantData {
   identified: boolean;
@@ -60,6 +62,7 @@ export default function ResultScreen() {
   const [knowledgeExpanded, setKnowledgeExpanded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [matchedDbPlant, setMatchedDbPlant] = useState<Plant | null>(null);
 
   const topPad =
     Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
@@ -89,6 +92,35 @@ export default function ResultScreen() {
     if (!scanId) return;
     isReportSaved(scanId).then(setIsSaved);
   }, [scanId]);
+
+  useEffect(() => {
+    if (!plantData?.identified) return;
+    const sci = plantData.name_scientific.toLowerCase().trim();
+    const com = plantData.name_common.toLowerCase().trim();
+    getAllPlants().then((plants) => {
+      const match = plants.find((p) => {
+        const pSci = p.name_scientific.toLowerCase().trim();
+        const pCom = p.name_common.toLowerCase().trim();
+        return (
+          pSci === sci ||
+          pCom === com ||
+          pSci.startsWith(sci.split(" ").slice(0, 2).join(" ")) ||
+          sci.startsWith(pSci.split(" ").slice(0, 2).join(" "))
+        );
+      });
+      setMatchedDbPlant(match ?? null);
+      if (!match) {
+        addPendingPlant({
+          id: scanId ?? `pending-${Date.now()}`,
+          imageUri: decodedUri,
+          name_common: plantData.name_common,
+          name_scientific: plantData.name_scientific,
+          confidence: plantData.confidence,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+  }, [plantDataRaw]);
 
   const decodedUri = imageUri ? decodeURIComponent(imageUri) : null;
   const confidence = plantData?.confidence ?? 0;
@@ -266,6 +298,27 @@ export default function ResultScreen() {
             <Text style={styles.confidenceValue}>{confidencePercent}%</Text>
           </View>
         </View>
+
+        {matchedDbPlant && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/library");
+            }}
+            style={({ pressed }) => [styles.libraryMatchCard, pressed && { opacity: 0.75 }]}
+          >
+            <View style={styles.libraryMatchIcon}>
+              <Feather name="book-open" size={15} color={Colors.primary.gold} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.libraryMatchTitle}>Found in RUZIVO Library</Text>
+              <Text style={styles.libraryMatchSub}>
+                "{matchedDbPlant.name_common}" is in your local plant database
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={15} color={Colors.primary.gold} />
+          </Pressable>
+        )}
 
         {plantData.uses && plantData.uses.length > 0 && (
           <ResultSection
@@ -923,5 +976,34 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: Colors.primary.white,
     lineHeight: 22,
+  },
+  libraryMatchCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: Colors.primary.gold + "18",
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary.gold + "44",
+  },
+  libraryMatchIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: Colors.primary.gold + "22",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  libraryMatchTitle: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.gold,
+  },
+  libraryMatchSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.gold + "AA",
+    marginTop: 1,
   },
 });

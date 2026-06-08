@@ -1,0 +1,79 @@
+RUZIVO Database Expansion & Smart Plant Learning Enhancement
+
+Please implement the following features WITHOUT removing, modifying, or redesigning any existing functionality.
+
+1. Expand Plant Knowledge Database
+
+- Add significantly more plant records to the RUZIVO database.
+- Include medicinal, edible, ecological, ornamental, and indigenous African plants.
+- Examples include:
+  - Black Seed Plant (Nigella sativa)
+  - Agave species
+  - Aloe species
+  - Moringa species
+  - Indigenous African medicinal plants
+  - Food crops
+  - Wild edible plants
+  - Pollinator-supporting plants
+- Continue expanding the database over time.
+
+2. Existing Plant Detection
+   When a user scans a plant:
+
+- First check whether the plant already exists in the RUZIVO database.
+- If the plant exists:
+  - Open the existing plant record.
+  - Do not create duplicates.
+
+3. New Plant Discovery Workflow
+   If the scanned plant does not exist in the database:
+
+- Create a Pending Plant Entry.
+- Store:
+  - Plant image
+  - Scientific name prediction
+  - Common name prediction
+  - Confidence score
+  - Scan date
+  - Optional location information
+- Mark the record as "Pending Review".
+
+4. Automatic Database Growth
+   After a pending plant entry has been reviewed and approved:
+
+- Automatically add it to the official RUZIVO plant database.
+- Generate the standard RUZIVO profile structure:
+  - Identification
+  - Local Names
+  - Traditional Knowledge
+  - Traditional Uses
+  - Nutritional Profile
+  - Active Compounds
+  - Ecology & Habitat
+  - Conservation Notes
+  - Safety Information
+
+5. Duplicate Prevention
+   Before adding any new plant:
+
+- Compare scientific names.
+- Compare common names.
+- Compare plant family.
+- Compare image similarity.
+- Prevent duplicate entries.
+
+6. Database Learning Dashboard
+   Add an admin dashboard showing:
+
+- Total plants in database
+- New plants awaiting review
+- Recently approved plants
+- Duplicate detection alerts
+- Plant growth statistics
+
+Important:
+
+- Preserve all existing RUZIVO functionality.
+- Do not modify current plant reports.
+- Do not change the current user interface unless necessary for these additions.
+- These features should extend RUZIVO while maintaining its current structure and knowledge system.

@@ -15,20 +15,28 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
-import { getRecentScans, type Scan } from "@/lib/database";
+import { getRecentScans, getAllPlants, type Scan } from "@/lib/database";
 import {
   getSavedReports,
   deleteReport,
   type SavedReport,
 } from "@/lib/savedReports";
+import {
+  getPendingPlants,
+  updatePendingStatus,
+  deletePendingPlant,
+  type PendingPlant,
+} from "@/lib/pendingPlants";
 
-type Tab = "history" | "saved";
+type Tab = "history" | "saved" | "pending";
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>("history");
   const [scans, setScans] = useState<Scan[]>([]);
   const [saved, setSaved] = useState<SavedReport[]>([]);
+  const [pending, setPending] = useState<PendingPlant[]>([]);
+  const [totalPlants, setTotalPlants] = useState(0);
   const [query, setQuery] = useState("");
 
   const topPad =
@@ -37,14 +45,23 @@ export default function HistoryScreen() {
     Platform.OS === "web" ? Math.max(insets.bottom, 34) : insets.bottom;
 
   const load = useCallback(async () => {
-    const [s, r] = await Promise.all([getRecentScans(50), getSavedReports()]);
+    const [s, r, p, plants] = await Promise.all([
+      getRecentScans(50),
+      getSavedReports(),
+      getPendingPlants(),
+      getAllPlants(),
+    ]);
     setScans(s);
     setSaved(r);
+    setPending(p);
+    setTotalPlants(plants.length);
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const pendingCount = pending.filter((p) => p.status === "pending").length;
 
   const filteredScans = scans.filter((s) =>
     (s.identified_name ?? "").toLowerCase().includes(query.toLowerCase())
@@ -54,6 +71,12 @@ export default function HistoryScreen() {
     (r.plantData?.name_common ?? "")
       .toLowerCase()
       .includes(query.toLowerCase())
+  );
+
+  const filteredPending = pending.filter(
+    (p) =>
+      p.name_common.toLowerCase().includes(query.toLowerCase()) ||
+      p.name_scientific.toLowerCase().includes(query.toLowerCase())
   );
 
   const openScan = (scan: Scan) => {
@@ -105,6 +128,43 @@ export default function HistoryScreen() {
     );
   };
 
+  const handleApprovePending = (item: PendingPlant) => {
+    Alert.alert(
+      "Mark as Approved",
+      `Mark "${item.name_common}" as a verified discovery?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Approve",
+          onPress: async () => {
+            await updatePendingStatus(item.id, "approved", "Approved by user review");
+            setPending((prev) =>
+              prev.map((p) => p.id === item.id ? { ...p, status: "approved" } : p)
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRejectPending = (item: PendingPlant) => {
+    Alert.alert(
+      "Remove Discovery",
+      `Remove "${item.name_common}" from new discoveries?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            await deletePendingPlant(item.id);
+            setPending((prev) => prev.filter((p) => p.id !== item.id));
+          },
+        },
+      ]
+    );
+  };
+
   const formatDate = (iso: string) => {
     try {
       const d = new Date(iso);
@@ -118,6 +178,12 @@ export default function HistoryScreen() {
     }
   };
 
+  const getTabTitle = () => {
+    if (tab === "history") return "Scan History";
+    if (tab === "saved") return "Saved Plants";
+    return "New Discoveries";
+  };
+
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
       <View style={styles.header}>
@@ -127,10 +193,31 @@ export default function HistoryScreen() {
         >
           <Feather name="arrow-left" size={22} color={Colors.primary.white} />
         </Pressable>
-        <Text style={styles.title}>
-          {tab === "history" ? "Scan History" : "Saved Plants"}
-        </Text>
+        <Text style={styles.title}>{getTabTitle()}</Text>
         <View style={{ width: 36 }} />
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statPill}>
+          <Feather name="database" size={12} color={Colors.primary.gold} />
+          <Text style={styles.statText}>{totalPlants} Plants</Text>
+        </View>
+        <View style={styles.statPill}>
+          <Feather name="clock" size={12} color={Colors.primary.textMuted} />
+          <Text style={styles.statText}>{scans.length} Scans</Text>
+        </View>
+        <View style={styles.statPill}>
+          <Feather name="bookmark" size={12} color={Colors.primary.textMuted} />
+          <Text style={styles.statText}>{saved.length} Saved</Text>
+        </View>
+        {pendingCount > 0 && (
+          <View style={[styles.statPill, styles.statPillNew]}>
+            <Feather name="plus-circle" size={12} color={Colors.primary.darkGreen} />
+            <Text style={[styles.statText, { color: Colors.primary.darkGreen }]}>
+              {pendingCount} New
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.tabs}>
@@ -143,7 +230,7 @@ export default function HistoryScreen() {
         >
           <Feather
             name="clock"
-            size={14}
+            size={13}
             color={tab === "history" ? Colors.primary.black : Colors.primary.textMuted}
           />
           <Text style={[styles.tabText, tab === "history" && styles.tabTextActive]}>
@@ -159,11 +246,27 @@ export default function HistoryScreen() {
         >
           <Feather
             name="bookmark"
-            size={14}
+            size={13}
             color={tab === "saved" ? Colors.primary.black : Colors.primary.textMuted}
           />
           <Text style={[styles.tabText, tab === "saved" && styles.tabTextActive]}>
             Saved ({saved.length})
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.tab, tab === "pending" && styles.tabActive]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setTab("pending");
+          }}
+        >
+          <Feather
+            name="plus-circle"
+            size={13}
+            color={tab === "pending" ? Colors.primary.black : Colors.primary.textMuted}
+          />
+          <Text style={[styles.tabText, tab === "pending" && styles.tabTextActive]}>
+            New{pendingCount > 0 ? ` (${pendingCount})` : ""}
           </Text>
         </Pressable>
       </View>
@@ -289,6 +392,84 @@ export default function HistoryScreen() {
               </Pressable>
             ))
           ))}
+
+        {tab === "pending" && (
+          <>
+            {filteredPending.length === 0 ? (
+              <EmptyState
+                icon="plus-circle"
+                title="No new discoveries yet"
+                subtitle="Plants not found in your local library will appear here after scanning"
+              />
+            ) : (
+              <>
+                <View style={styles.pendingInfo}>
+                  <Feather name="info" size={13} color={Colors.primary.textMuted} />
+                  <Text style={styles.pendingInfoText}>
+                    These plants were identified but are not yet in the RUZIVO library. Review and approve them to track your discoveries.
+                  </Text>
+                </View>
+                {filteredPending.map((item) => (
+                  <View key={item.id} style={styles.card}>
+                    {item.imageUri ? (
+                      <Image
+                        source={{ uri: item.imageUri }}
+                        style={styles.thumbnail}
+                      />
+                    ) : (
+                      <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
+                        <Feather name="eye" size={20} color={Colors.primary.textMuted} />
+                      </View>
+                    )}
+                    <View style={styles.cardContent}>
+                      <View style={styles.pendingNameRow}>
+                        <Text style={styles.plantName} numberOfLines={1}>
+                          {item.name_common}
+                        </Text>
+                        <View style={[
+                          styles.statusBadge,
+                          item.status === "approved" && styles.statusBadgeApproved,
+                          item.status === "rejected" && styles.statusBadgeRejected,
+                        ]}>
+                          <Text style={[
+                            styles.statusBadgeText,
+                            item.status === "approved" && styles.statusBadgeTextApproved,
+                          ]}>
+                            {item.status === "pending" ? "Review" : item.status === "approved" ? "✓ Verified" : "Removed"}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.plantMeta} numberOfLines={1}>
+                        {item.name_scientific}
+                      </Text>
+                      <Text style={styles.plantDate}>
+                        {Math.round(item.confidence * 100)}% confidence · {formatDate(item.timestamp)}
+                      </Text>
+                    </View>
+                    {item.status === "pending" && (
+                      <View style={styles.pendingActions}>
+                        <Pressable
+                          onPress={() => handleApprovePending(item)}
+                          style={styles.approveBtn}
+                          hitSlop={6}
+                        >
+                          <Feather name="check" size={14} color={Colors.primary.safe} />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleRejectPending(item)}
+                          style={styles.rejectBtn}
+                          hitSlop={6}
+                        >
+                          <Feather name="trash-2" size={14} color={Colors.primary.caution} />
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </>
+            )}
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -324,7 +505,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.primary.separator,
   },
@@ -339,10 +520,38 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: Colors.primary.white,
   },
+  statsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  statPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: Colors.primary.cardBg,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: Colors.primary.separator,
+  },
+  statPillNew: {
+    backgroundColor: Colors.primary.gold,
+    borderColor: Colors.primary.gold,
+  },
+  statText: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: Colors.primary.textMuted,
+  },
   tabs: {
     flexDirection: "row",
     marginHorizontal: 20,
-    marginTop: 16,
+    marginTop: 10,
     backgroundColor: Colors.primary.cardBg,
     borderRadius: 12,
     padding: 4,
@@ -354,15 +563,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
+    gap: 5,
+    paddingVertical: 9,
     borderRadius: 10,
   },
   tabActive: {
     backgroundColor: Colors.primary.gold,
   },
   tabText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_500Medium",
     color: Colors.primary.textMuted,
   },
@@ -375,7 +584,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginHorizontal: 20,
-    marginTop: 12,
+    marginTop: 10,
     marginBottom: 4,
     backgroundColor: Colors.primary.cardBg,
     borderRadius: 12,
@@ -393,7 +602,7 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
     paddingHorizontal: 20,
-    marginTop: 12,
+    marginTop: 10,
   },
   card: {
     flexDirection: "row",
@@ -409,9 +618,9 @@ const styles = StyleSheet.create({
     opacity: 0.75,
   },
   thumbnail: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 10,
   },
   thumbnailPlaceholder: {
     backgroundColor: Colors.primary.separator,
@@ -423,7 +632,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   plantName: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     color: Colors.primary.white,
   },
@@ -441,6 +650,68 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     padding: 6,
+  },
+  pendingInfo: {
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: Colors.primary.cardBg,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary.separator,
+    alignItems: "flex-start",
+  },
+  pendingInfoText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.textMuted,
+    lineHeight: 18,
+  },
+  pendingNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statusBadge: {
+    backgroundColor: Colors.primary.gold + "33",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  statusBadgeApproved: {
+    backgroundColor: Colors.primary.safe + "33",
+  },
+  statusBadgeRejected: {
+    backgroundColor: Colors.primary.separator,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_500Medium",
+    color: Colors.primary.gold,
+  },
+  statusBadgeTextApproved: {
+    color: Colors.primary.safe,
+  },
+  pendingActions: {
+    gap: 8,
+    alignItems: "center",
+  },
+  approveBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: Colors.primary.safe + "22",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rejectBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: Colors.primary.caution + "22",
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyState: {
     alignItems: "center",
