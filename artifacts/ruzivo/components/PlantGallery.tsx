@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
   View,
-  Image,
   ScrollView,
   Text,
   StyleSheet,
@@ -9,6 +8,7 @@ import {
   NativeScrollEvent,
   LayoutChangeEvent,
 } from "react-native";
+import { Image } from "expo-image";
 import Colors from "@/constants/colors";
 
 const GALLERY_HEIGHT = 218;
@@ -161,9 +161,9 @@ export default function PlantGallery() {
               style={{ width: galleryWidth, height: GALLERY_HEIGHT }}
             >
               <Image
-                source={{ uri: slide.uri }}
+                source={slide.uri}
                 style={styles.image}
-                resizeMode="cover"
+                contentFit="cover"
               />
               <View style={styles.labelOverlay}>
                 <Text style={styles.categoryText}>{slide.category}</Text>
