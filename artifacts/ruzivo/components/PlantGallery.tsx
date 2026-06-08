@@ -37,7 +37,7 @@ const SLIDES: PlantSlide[] = [
   },
   {
     id: "3",
-    uri: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=75",
+    uri: "https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=800&q=75",
     name: "Tropical Leaves",
     category: "Indigenous Flora",
   },
