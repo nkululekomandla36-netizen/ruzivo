@@ -49,7 +49,7 @@ const SLIDES: PlantSlide[] = [
   },
   {
     id: "5",
-    uri: "https://images.unsplash.com/photo-1515023115689-589c33041d3c?auto=format&fit=crop&w=800&q=75",
+    uri: "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?auto=format&fit=crop&w=800&q=75",
     name: "Healing Herbs",
     category: "Traditional Medicine",
   },
