@@ -24,7 +24,7 @@ import {
   cacheLastPlant,
 } from "@/lib/offlineService";
 
-const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 type ScreenState = "idle" | "preview" | "identifying" | "bush-pick";
 type ScanStep = "reading" | "identifying" | "saving";
