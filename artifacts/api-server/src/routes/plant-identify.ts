@@ -31,7 +31,7 @@ router.post("/plant-identify", async (req, res) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       max_completion_tokens: 1024,
       messages: [
         {
