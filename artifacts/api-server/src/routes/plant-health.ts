@@ -51,10 +51,16 @@ Always return valid JSON with no markdown formatting.`,
             },
             {
               type: "text",
-              text: `Analyse this plant image for health problems and return ONLY a JSON object with exactly these fields:
+              text: `You are analysing this plant image in two steps: first identify the plant species, then diagnose any health problems.
+
+Step 1 — Plant identification: Look at the overall plant shape, leaf morphology, stem structure, colour, texture, and any other visible features to determine the species. Be as specific as possible — provide the actual common name (e.g. "Tomato", "Maize", "Cassava", "Rose", "Mango", "Aloe Vera"). Only use "Unknown Plant" if truly unidentifiable.
+
+Step 2 — Health diagnosis: Look for signs of disease, pest damage, nutrient deficiencies, overwatering, sunburn, fungal infection, or other health problems on the plant.
+
+Return ONLY a JSON object with exactly these fields:
 {
   "problem_identified": true or false (whether a plant health problem is visible),
-  "plant_name": "Common name of the plant species if identifiable, otherwise 'Unknown Plant'",
+  "plant_name": "The identified common name of the plant species — be specific, e.g. 'Tomato', 'Maize', 'Cassava', 'Mango', 'Aloe Vera'. Only use 'Unknown Plant' if truly unidentifiable.",
   "condition_name": "Name of the disease, deficiency, pest damage, or health condition observed",
   "severity": "Mild" or "Moderate" or "Severe",
   "description": "1-2 sentence description of what is affecting the plant and why it matters",
@@ -63,7 +69,8 @@ Always return valid JSON with no markdown formatting.`,
   "prevention_tips": ["prevention tip 1", "prevention tip 2", "prevention tip 3"],
   "urgency": "A short phrase about how urgently action is needed, e.g. 'Act within 24-48 hours' or 'Monitor over next 2 weeks' or 'Immediate action required'"
 }
-If no plant health problem is visible, if no plant is in the image, or if the image is too unclear, set problem_identified to false and use "No Problem Detected" for condition_name and "Mild" for severity.
+If no plant health problem is visible but the plant is identifiable, still provide the plant_name and set problem_identified to false with condition_name "No Problem Detected".
+If the image is too unclear to identify the plant or diagnose, set problem_identified to false.
 Focus on natural and organic treatment methods suitable for African growing conditions. Avoid recommending synthetic pesticides.`,
             },
           ],
