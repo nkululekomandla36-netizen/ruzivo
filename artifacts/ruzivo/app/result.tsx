@@ -98,7 +98,9 @@ export default function ResultScreen() {
     if (!plantData?.identified) return;
     const sci = plantData.name_scientific.toLowerCase().trim();
     const com = plantData.name_common.toLowerCase().trim();
+    console.log("[result] checking library for:", com, "/", sci);
     getAllPlants().then((plants) => {
+      console.log("[result] library has", plants.length, "plants");
       const match = plants.find((p) => {
         const pSci = p.name_scientific.toLowerCase().trim();
         const pCom = p.name_common.toLowerCase().trim();
@@ -109,6 +111,7 @@ export default function ResultScreen() {
           sci.startsWith(pSci.split(" ").slice(0, 2).join(" "))
         );
       });
+      console.log("[result] library match:", match ? match.name_common : "NONE — will add to pending");
       setMatchedDbPlant(match ?? null);
       if (!match) {
         addPendingPlant({

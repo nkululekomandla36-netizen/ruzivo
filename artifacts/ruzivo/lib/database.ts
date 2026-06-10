@@ -968,6 +968,7 @@ export async function getPlantById(id: string): Promise<Plant | null> {
 }
 
 export async function addPlant(plant: Plant): Promise<void> {
+  console.log("[addPlant] called for:", plant.name_common, "id:", plant.id, "platform:", Platform.OS);
   if (Platform.OS !== "web") {
     try {
       const SQLite = await import("expo-sqlite");
@@ -987,20 +988,30 @@ export async function addPlant(plant: Plant): Promise<void> {
           JSON.stringify(plant.local_names),
         ]
       );
+      console.log("[addPlant] SQLite write succeeded for:", plant.name_common);
       return;
-    } catch {}
+    } catch (err) {
+      console.error("[addPlant] SQLite write FAILED:", err);
+    }
   }
+  console.log("[addPlant] writing to AsyncStorage for:", plant.name_common);
   const data = await AsyncStorage.getItem(PLANTS_KEY);
   const plants: Plant[] = data ? JSON.parse(data) : [...SEED_PLANTS];
-  if (plants.some((p) => p.id === plant.id)) return;
+  if (plants.some((p) => p.id === plant.id)) {
+    console.log("[addPlant] duplicate ID, skipping:", plant.id);
+    return;
+  }
   await AsyncStorage.setItem(PLANTS_KEY, JSON.stringify([...plants, plant]));
+  console.log("[addPlant] AsyncStorage write succeeded, total plants:", plants.length + 1);
 }
 
 export async function saveScan(scan: Scan): Promise<void> {
+  console.log("[saveScan] called id:", scan.id, "name:", scan.identified_name, "has plant_data_json:", !!scan.plant_data_json);
   const data = await AsyncStorage.getItem(SCANS_KEY);
   const scans: Scan[] = data ? JSON.parse(data) : [];
   scans.unshift(scan);
   await AsyncStorage.setItem(SCANS_KEY, JSON.stringify(scans.slice(0, 50)));
+  console.log("[saveScan] AsyncStorage write done, total scans now:", scans.length);
 
   if (Platform.OS !== "web") {
     try {

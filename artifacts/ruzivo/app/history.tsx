@@ -147,25 +147,35 @@ export default function HistoryScreen() {
               .replace(/\s+/g, "-")
               .replace(/[^a-z0-9-]/g, "");
 
+            console.log("[approve] pending plant:", item.name_common, "slug:", slug);
+            console.log("[approve] scans in state:", scans.length, "saved reports:", saved.length);
+
             const matchedScan = scans.find(
               (s) =>
                 s.identified_name?.toLowerCase() === item.name_common.toLowerCase()
             );
+            console.log("[approve] matched scan:", matchedScan?.id ?? "NONE", "has plant_data_json:", !!matchedScan?.plant_data_json);
+
             let scanPlantData: Record<string, any> | null = null;
             try {
               if (matchedScan?.plant_data_json) {
                 scanPlantData = JSON.parse(matchedScan.plant_data_json);
+                console.log("[approve] parsed scan plant data — safety_status:", scanPlantData?.safety_status, "uses count:", scanPlantData?.uses?.length);
               }
-            } catch {}
+            } catch (err) {
+              console.error("[approve] failed to parse plant_data_json:", err);
+            }
 
             const matchedReport = saved.find(
               (r) =>
                 r.plantData?.name_common?.toLowerCase() ===
                 item.name_common.toLowerCase()
             );
+            console.log("[approve] matched saved report:", matchedReport?.id ?? "NONE");
             const reportPlantData = matchedReport?.plantData ?? null;
 
             const source = reportPlantData ?? scanPlantData;
+            console.log("[approve] data source:", reportPlantData ? "savedReport" : scanPlantData ? "scanHistory" : "NONE — will use empty defaults");
 
             const plant: Plant = {
               id: slug || `user-${Date.now()}`,
