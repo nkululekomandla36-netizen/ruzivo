@@ -900,9 +900,13 @@ export async function initDatabase(): Promise<void> {
 }
 
 async function getNativePlants(): Promise<Plant[]> {
+  let sqlitePlants: Plant[] = [];
+  let sqliteOk = false;
+
   try {
     const SQLite = await import("expo-sqlite");
     const db = await SQLite.openDatabaseAsync("ruzivo.db");
+    await db.getFirstAsync("SELECT 1");
     const rows = await db.getAllAsync<{
       id: string;
       name_common: string;
@@ -914,7 +918,7 @@ async function getNativePlants(): Promise<Plant[]> {
       traditional_uses: string;
       local_names: string;
     }>("SELECT * FROM plants ORDER BY name_common ASC");
-    return rows.map((r) => ({
+    sqlitePlants = rows.map((r) => ({
       ...r,
       safety_status: r.safety_status as Plant["safety_status"],
       uses: JSON.parse(r.uses),
@@ -922,9 +926,29 @@ async function getNativePlants(): Promise<Plant[]> {
       traditional_uses: JSON.parse(r.traditional_uses),
       local_names: JSON.parse(r.local_names),
     }));
+    sqliteOk = true;
   } catch {
     return getWebPlants();
   }
+
+  if (!sqliteOk) return getWebPlants();
+
+  try {
+    const data = await AsyncStorage.getItem(PLANTS_KEY);
+    if (data) {
+      const asyncPlants: Plant[] = JSON.parse(data);
+      const sqliteIds = new Set(sqlitePlants.map((p) => p.id));
+      const seedIds = new Set(SEED_PLANTS.map((p) => p.id));
+      const fallbackOnly = asyncPlants.filter(
+        (p) => !sqliteIds.has(p.id) && !seedIds.has(p.id)
+      );
+      if (fallbackOnly.length > 0) {
+        return [...sqlitePlants, ...fallbackOnly];
+      }
+    }
+  } catch {}
+
+  return sqlitePlants;
 }
 
 async function getWebPlants(): Promise<Plant[]> {
@@ -970,9 +994,12 @@ export async function getPlantById(id: string): Promise<Plant | null> {
 export async function addPlant(plant: Plant): Promise<void> {
   console.log("[addPlant] called for:", plant.name_common, "id:", plant.id, "platform:", Platform.OS);
   if (Platform.OS !== "web") {
+    let sqliteWriteOk = false;
     try {
       const SQLite = await import("expo-sqlite");
       const db = await SQLite.openDatabaseAsync("ruzivo.db");
+      if (!db) throw new Error("db handle is null");
+      await db.getFirstAsync("SELECT 1");
       await db.runAsync(
         `INSERT OR IGNORE INTO plants (id, name_common, name_scientific, image_url, safety_status, uses, warnings, traditional_uses, local_names)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -988,11 +1015,12 @@ export async function addPlant(plant: Plant): Promise<void> {
           JSON.stringify(plant.local_names),
         ]
       );
+      sqliteWriteOk = true;
       console.log("[addPlant] SQLite write succeeded for:", plant.name_common);
-      return;
     } catch (err) {
       console.error("[addPlant] SQLite write FAILED:", err);
     }
+    if (sqliteWriteOk) return;
   }
   console.log("[addPlant] writing to AsyncStorage for:", plant.name_common);
   const data = await AsyncStorage.getItem(PLANTS_KEY);
