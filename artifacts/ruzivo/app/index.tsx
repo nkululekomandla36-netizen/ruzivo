@@ -59,6 +59,11 @@ export default function HomeScreen() {
     router.push("/history");
   };
 
+  const handlePlantHealth = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/plant-health");
+  };
+
   return (
     <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
       <StatusBar barStyle="light-content" />
@@ -121,6 +126,20 @@ export default function HomeScreen() {
             <Feather name="clock" size={22} color={Colors.primary.gold} />
           </View>
           <Text style={styles.secondaryButtonText}>Scan History</Text>
+          <Feather name="arrow-right" size={18} color={Colors.primary.gold} />
+        </Pressable>
+
+        <Pressable
+          onPress={handlePlantHealth}
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <View style={styles.buttonIcon}>
+            <Feather name="activity" size={22} color={Colors.primary.gold} />
+          </View>
+          <Text style={styles.secondaryButtonText}>Plant Health</Text>
           <Feather name="arrow-right" size={18} color={Colors.primary.gold} />
         </Pressable>
       </View>
