@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
-import { getRecentScans, getAllPlants, type Scan } from "@/lib/database";
+import { getRecentScans, getAllPlants, addPlant, type Scan, type Plant } from "@/lib/database";
 import {
   getSavedReports,
   deleteReport,
@@ -130,16 +130,61 @@ export default function HistoryScreen() {
 
   const handleApprovePending = (item: PendingPlant) => {
     Alert.alert(
-      "Mark as Approved",
-      `Mark "${item.name_common}" as a verified discovery?`,
+      "Add to Library",
+      `Add "${item.name_common}" to your Plant Library?`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Approve",
+          text: "Add to Library",
           onPress: async () => {
             await updatePendingStatus(item.id, "approved", "Approved by user review");
             setPending((prev) =>
               prev.map((p) => p.id === item.id ? { ...p, status: "approved" } : p)
+            );
+
+            const slug = item.name_scientific
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[^a-z0-9-]/g, "");
+
+            const matchedScan = scans.find(
+              (s) =>
+                s.identified_name?.toLowerCase() === item.name_common.toLowerCase()
+            );
+            let scanPlantData: Record<string, any> | null = null;
+            try {
+              if (matchedScan?.plant_data_json) {
+                scanPlantData = JSON.parse(matchedScan.plant_data_json);
+              }
+            } catch {}
+
+            const matchedReport = saved.find(
+              (r) =>
+                r.plantData?.name_common?.toLowerCase() ===
+                item.name_common.toLowerCase()
+            );
+            const reportPlantData = matchedReport?.plantData ?? null;
+
+            const source = reportPlantData ?? scanPlantData;
+
+            const plant: Plant = {
+              id: slug || `user-${Date.now()}`,
+              name_common: item.name_common,
+              name_scientific: item.name_scientific,
+              image_url: item.imageUri,
+              safety_status:
+                (source?.safety_status as Plant["safety_status"]) ?? "Safe",
+              uses: source?.uses ?? [],
+              warnings: source?.warnings ?? [],
+              traditional_uses: source?.traditional_uses ?? [],
+              local_names: source?.local_names ?? {},
+            };
+
+            await addPlant(plant);
+
+            Alert.alert(
+              "Added to Library",
+              `"${item.name_common}" is now in your Plant Library.`
             );
           },
         },
@@ -406,7 +451,7 @@ export default function HistoryScreen() {
                 <View style={styles.pendingInfo}>
                   <Feather name="info" size={13} color={Colors.primary.textMuted} />
                   <Text style={styles.pendingInfoText}>
-                    These plants were identified but are not yet in the RUZIVO library. Review and approve them to track your discoveries.
+                    These plants were identified but are not yet in your library. Tap ✓ to add them to your Plant Library.
                   </Text>
                 </View>
                 {filteredPending.map((item) => (
@@ -435,7 +480,7 @@ export default function HistoryScreen() {
                             styles.statusBadgeText,
                             item.status === "approved" && styles.statusBadgeTextApproved,
                           ]}>
-                            {item.status === "pending" ? "Review" : item.status === "approved" ? "✓ Verified" : "Removed"}
+                            {item.status === "pending" ? "New" : item.status === "approved" ? "✓ In Library" : "Removed"}
                           </Text>
                         </View>
                       </View>

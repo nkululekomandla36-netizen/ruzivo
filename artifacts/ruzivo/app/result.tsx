@@ -187,7 +187,7 @@ export default function ResultScreen() {
         if (Platform.OS === "android") {
           ToastAndroid.show("Plant saved!", ToastAndroid.SHORT);
         } else {
-          Alert.alert("Saved!", `"${plantData.name_common}" has been saved to your plant library.`);
+          Alert.alert("Saved!", `"${plantData.name_common}" has been saved to your Saved Plants.`);
         }
       }
     } finally {

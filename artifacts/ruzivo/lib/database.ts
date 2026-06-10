@@ -967,6 +967,35 @@ export async function getPlantById(id: string): Promise<Plant | null> {
   return plants.find((p) => p.id === id) ?? null;
 }
 
+export async function addPlant(plant: Plant): Promise<void> {
+  if (Platform.OS !== "web") {
+    try {
+      const SQLite = await import("expo-sqlite");
+      const db = await SQLite.openDatabaseAsync("ruzivo.db");
+      await db.runAsync(
+        `INSERT OR IGNORE INTO plants (id, name_common, name_scientific, image_url, safety_status, uses, warnings, traditional_uses, local_names)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          plant.id,
+          plant.name_common,
+          plant.name_scientific,
+          plant.image_url,
+          plant.safety_status,
+          JSON.stringify(plant.uses),
+          JSON.stringify(plant.warnings),
+          JSON.stringify(plant.traditional_uses),
+          JSON.stringify(plant.local_names),
+        ]
+      );
+      return;
+    } catch {}
+  }
+  const data = await AsyncStorage.getItem(PLANTS_KEY);
+  const plants: Plant[] = data ? JSON.parse(data) : [...SEED_PLANTS];
+  if (plants.some((p) => p.id === plant.id)) return;
+  await AsyncStorage.setItem(PLANTS_KEY, JSON.stringify([...plants, plant]));
+}
+
 export async function saveScan(scan: Scan): Promise<void> {
   const data = await AsyncStorage.getItem(SCANS_KEY);
   const scans: Scan[] = data ? JSON.parse(data) : [];
