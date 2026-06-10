@@ -178,9 +178,17 @@ export default function HomeScreen() {
         </View>
       </Pressable>
 
-      <Text style={styles.disclaimer}>
-        For educational purposes only. Not a substitute for medical advice.
-      </Text>
+      <View style={styles.footerRow}>
+        <Text style={styles.disclaimer}>
+          For educational purposes only. Not a substitute for medical advice.
+        </Text>
+        <Pressable
+          onPress={() => router.push("/privacy-policy")}
+          style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Text style={styles.privacyLink}>Privacy Policy</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -329,6 +337,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_500Medium",
     color: Colors.primary.textMuted,
+  },
+  footerRow: {
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  privacyLink: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.gold + "99",
+    textDecorationLine: "underline",
   },
   disclaimer: {
     fontSize: 11,
