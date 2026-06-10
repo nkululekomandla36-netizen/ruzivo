@@ -18,6 +18,7 @@ interface PlantHealthResult {
   natural_treatments: string[];
   prevention_tips: string[];
   urgency: string;
+  health_score: number;
 }
 
 router.post("/plant-health", async (req, res) => {
@@ -67,7 +68,8 @@ Return ONLY a JSON object with exactly these fields:
   "symptoms": ["visible symptom 1", "visible symptom 2", "visible symptom 3"],
   "natural_treatments": ["natural/organic treatment 1", "natural/organic treatment 2", "natural/organic treatment 3", "natural/organic treatment 4"],
   "prevention_tips": ["prevention tip 1", "prevention tip 2", "prevention tip 3"],
-  "urgency": "A short phrase about how urgently action is needed, e.g. 'Act within 24-48 hours' or 'Monitor over next 2 weeks' or 'Immediate action required'"
+  "urgency": "A short phrase about how urgently action is needed, e.g. 'Act within 24-48 hours' or 'Monitor over next 2 weeks' or 'Immediate action required'",
+  "health_score": A whole number from 0 to 100 representing the overall health of the plant. Use these bands: 80-100 for a plant that appears healthy with only minor stress indicators, 60-79 for minor issues that should be monitored, 40-59 for significant stress where corrective action is recommended, 0-39 for severe symptoms requiring immediate action. If no problem is detected set this to a value between 85 and 100.
 }
 If no plant health problem is visible but the plant is identifiable, still provide the plant_name and set problem_identified to false with condition_name "No Problem Detected".
 If the image is too unclear to identify the plant or diagnose, set problem_identified to false.
@@ -99,6 +101,7 @@ Focus on natural and organic treatment methods suitable for African growing cond
         ],
         prevention_tips: ["Good lighting and focus produce the most accurate results"],
         urgency: "Retake photo for accurate analysis",
+        health_score: 0,
       };
     }
 

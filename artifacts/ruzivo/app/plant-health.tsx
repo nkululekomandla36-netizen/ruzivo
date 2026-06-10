@@ -48,6 +48,14 @@ interface HealthData {
   natural_treatments: string[];
   prevention_tips: string[];
   urgency: string;
+  health_score: number;
+}
+
+function getScoreStatus(score: number): { label: string; color: string } {
+  if (score >= 80) return { label: "Good", color: "#4CAF50" };
+  if (score >= 60) return { label: "Fair", color: "#C9A227" };
+  if (score >= 40) return { label: "Poor", color: "#FF8C00" };
+  return { label: "Critical", color: "#E53935" };
 }
 
 const SEVERITY_TO_SAFETY: Record<string, "Safe" | "Caution" | "Toxic"> = {
@@ -200,6 +208,8 @@ export default function PlantHealthScreen() {
   };
 
   const buildHealthReportText = (data: HealthData): string => {
+    const score = typeof data.health_score === "number" ? data.health_score : 0;
+    const scoreStatus = getScoreStatus(score);
     const lines: string[] = [
       "RUZIVO PLANT HEALTH REPORT",
       "==========================",
@@ -208,6 +218,11 @@ export default function PlantHealthScreen() {
       `Condition: ${data.condition_name}`,
       `Severity: ${data.severity}`,
       `Urgency: ${data.urgency}`,
+      "",
+      "PLANT HEALTH SCORE",
+      "------------------",
+      `${score} / 100`,
+      `Status: ${scoreStatus.label}`,
       "",
       "DESCRIPTION",
       "-----------",
@@ -313,6 +328,8 @@ export default function PlantHealthScreen() {
               <Text style={styles.urgencyText}>{healthData.urgency}</Text>
             </View>
           </View>
+
+          <PlantHealthScoreCard score={typeof healthData.health_score === "number" ? healthData.health_score : 0} />
 
           {healthData.problem_identified ? (
             <>
@@ -558,6 +575,31 @@ function Corner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
           : { right: 20, borderRightWidth: 3, borderTopWidth: 3, borderTopRightRadius: 8 },
       ]}
     />
+  );
+}
+
+function PlantHealthScoreCard({ score }: { score: number }) {
+  const { label, color } = getScoreStatus(score);
+  return (
+    <View style={styles.scoreCard}>
+      <View style={styles.scoreCardHeader}>
+        <View style={[styles.scoreCardIconBg, { backgroundColor: color + "22" }]}>
+          <Feather name="bar-chart-2" size={16} color={color} />
+        </View>
+        <Text style={styles.scoreCardTitle}>PLANT HEALTH SCORE</Text>
+      </View>
+      <View style={styles.scoreRow}>
+        <Text style={[styles.scoreNumber, { color }]}>{score}</Text>
+        <Text style={styles.scoreDenominator}> / 100</Text>
+      </View>
+      <View style={[styles.scoreStatusBadge, { backgroundColor: color + "22", borderColor: color + "55" }]}>
+        <View style={[styles.scoreStatusDot, { backgroundColor: color }]} />
+        <Text style={[styles.scoreStatusText, { color }]}>Status: {label}</Text>
+      </View>
+      <View style={styles.scoreTrackBg}>
+        <View style={[styles.scoreTrackFill, { width: `${score}%` as any, backgroundColor: color }]} />
+      </View>
+    </View>
   );
 }
 
@@ -987,5 +1029,75 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 8,
     lineHeight: 16,
+  },
+  scoreCard: {
+    backgroundColor: Colors.primary.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary.separator,
+    gap: 12,
+  },
+  scoreCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  scoreCardIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scoreCardTitle: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.textMuted,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  scoreRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+  scoreNumber: {
+    fontSize: 44,
+    fontFamily: "Inter_700Bold",
+    lineHeight: 48,
+  },
+  scoreDenominator: {
+    fontSize: 20,
+    fontFamily: "Inter_400Regular",
+    color: Colors.primary.textMuted,
+  },
+  scoreStatusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  scoreStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  scoreStatusText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  scoreTrackBg: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary.separator,
+    overflow: "hidden",
+  },
+  scoreTrackFill: {
+    height: 6,
+    borderRadius: 3,
   },
 });
