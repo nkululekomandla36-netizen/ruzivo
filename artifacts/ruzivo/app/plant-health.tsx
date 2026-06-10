@@ -208,7 +208,7 @@ export default function PlantHealthScreen() {
   };
 
   const buildHealthReportText = (data: HealthData): string => {
-    const score = typeof data.health_score === "number" ? data.health_score : 0;
+    const score = Number(data.health_score) || 0;
     const scoreStatus = getScoreStatus(score);
     const lines: string[] = [
       "RUZIVO PLANT HEALTH REPORT",
@@ -329,7 +329,7 @@ export default function PlantHealthScreen() {
             </View>
           </View>
 
-          <PlantHealthScoreCard score={typeof healthData.health_score === "number" ? healthData.health_score : 0} />
+          <PlantHealthScoreCard score={Number(healthData.health_score) || 0} />
 
           {healthData.problem_identified ? (
             <>
