@@ -69,7 +69,7 @@ Return ONLY a JSON object with exactly these fields:
   "natural_treatments": ["natural/organic treatment 1", "natural/organic treatment 2", "natural/organic treatment 3", "natural/organic treatment 4"],
   "prevention_tips": ["prevention tip 1", "prevention tip 2", "prevention tip 3"],
   "urgency": "A short phrase about how urgently action is needed, e.g. 'Act within 24-48 hours' or 'Monitor over next 2 weeks' or 'Immediate action required'",
-  "health_score": A whole number from 0 to 100 representing the overall health of the plant. Use these bands: 80-100 for a plant that appears healthy with only minor stress indicators, 60-79 for minor issues that should be monitored, 40-59 for significant stress where corrective action is recommended, 0-39 for severe symptoms requiring immediate action. If no problem is detected set this to a value between 85 and 100.
+  "health_score": A whole number from 0 to 100 representing the overall health of the plant. The score MUST match the severity field: if severity is "Mild" use a value between 60 and 80; if severity is "Moderate" use a value between 35 and 59; if severity is "Severe" use a value between 0 and 34. If problem_identified is false (no problem detected) use a value between 85 and 100.
 }
 If no plant health problem is visible but the plant is identifiable, still provide the plant_name and set problem_identified to false with condition_name "No Problem Detected".
 If the image is too unclear to identify the plant or diagnose, set problem_identified to false.
