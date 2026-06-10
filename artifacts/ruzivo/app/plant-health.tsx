@@ -297,7 +297,13 @@ export default function PlantHealthScreen() {
                 <Text style={styles.conditionName}>{healthData.condition_name}</Text>
                 <Text style={styles.plantNameText}>{healthData.plant_name}</Text>
               </View>
-              <SafetyBadge status={safetyStatus} size="large" />
+              {healthData.problem_identified ? (
+                <SafetyBadge status={safetyStatus} size="large" />
+              ) : (
+                <View style={styles.healthyBadge}>
+                  <Text style={styles.healthyBadgeText}>Healthy</Text>
+                </View>
+              )}
             </View>
 
             <Text style={styles.conditionDesc}>{healthData.description}</Text>
@@ -940,6 +946,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     color: Colors.primary.gold,
+  },
+  healthyBadge: {
+    backgroundColor: Colors.primary.safe + "22",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: Colors.primary.safe + "55",
+  },
+  healthyBadgeText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.primary.safe,
   },
   checkAnotherBtn: {
     flexDirection: "row",
