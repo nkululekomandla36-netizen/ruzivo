@@ -209,11 +209,19 @@ export default function ScanScreen() {
 
       setStep("identifying");
 
-      const apiResponse = await fetch(`${API_BASE}/api/plant-identify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_base64: base64 }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      let apiResponse: Response;
+      try {
+        apiResponse = await fetch(`${API_BASE}/api/plant-identify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image_base64: base64 }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!apiResponse.ok) throw new Error("API failed");
 
@@ -248,15 +256,19 @@ export default function ScanScreen() {
       });
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const isTimeout = err?.name === "AbortError";
       const isOffline =
-        err?.message?.includes("fetch") ||
-        err?.message?.includes("network") ||
-        err?.message?.includes("Network");
+        !isTimeout &&
+        (err?.message?.includes("fetch") ||
+          err?.message?.includes("network") ||
+          err?.message?.includes("Network"));
       Alert.alert(
-        isOffline ? "No Internet" : "Identification Failed",
-        isOffline
-          ? "You're offline. Browse the Plant Library to find plants without internet."
-          : "Could not identify this plant. Try a clearer, well-lit photo.",
+        isTimeout ? "Request Timed Out" : isOffline ? "No Internet" : "Identification Failed",
+        isTimeout
+          ? "The request took too long. Please check your connection and try again."
+          : isOffline
+            ? "You're offline. Browse the Plant Library to find plants without internet."
+            : "Could not identify this plant. Try a clearer, well-lit photo.",
         [{ text: "OK", onPress: () => setScreenState("preview") }]
       );
     } finally {

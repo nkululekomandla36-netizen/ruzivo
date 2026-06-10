@@ -85,6 +85,7 @@ export default function ResultScreen() {
       plantData.safety_status
     )
       .then(setKnowledge)
+      .catch(() => {})
       .finally(() => setKnowledgeLoading(false));
   }, [plantDataRaw]);
 

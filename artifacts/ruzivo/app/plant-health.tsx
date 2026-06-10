@@ -175,11 +175,19 @@ export default function PlantHealthScreen() {
 
       setStep("analysing");
 
-      const apiResponse = await fetch(`${API_BASE}/api/plant-health`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_base64: base64 }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      let apiResponse: Response;
+      try {
+        apiResponse = await fetch(`${API_BASE}/api/plant-health`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image_base64: base64 }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!apiResponse.ok) throw new Error("API failed");
 
@@ -191,15 +199,19 @@ export default function PlantHealthScreen() {
       setScreenState("results");
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const isTimeout = err?.name === "AbortError";
       const isOffline =
-        err?.message?.includes("fetch") ||
-        err?.message?.includes("network") ||
-        err?.message?.includes("Network");
+        !isTimeout &&
+        (err?.message?.includes("fetch") ||
+          err?.message?.includes("network") ||
+          err?.message?.includes("Network"));
       Alert.alert(
-        isOffline ? "No Internet" : "Analysis Failed",
-        isOffline
-          ? "You're offline. An internet connection is needed for plant health analysis."
-          : "Could not analyse this image. Please try a clearer photo of the affected area.",
+        isTimeout ? "Request Timed Out" : isOffline ? "No Internet" : "Analysis Failed",
+        isTimeout
+          ? "The request took too long. Please check your connection and try again."
+          : isOffline
+            ? "You're offline. An internet connection is needed for plant health analysis."
+            : "Could not analyse this image. Please try a clearer photo of the affected area.",
         [{ text: "OK", onPress: () => setScreenState("preview") }]
       );
     } finally {
